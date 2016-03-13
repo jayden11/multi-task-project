@@ -1,0 +1,104 @@
+Epoch: 1 Learning rate: 1.000
+cost: 3.378088, total cost: 39.595680
+cost: 3.039383, total cost: 152.983896
+cost: 2.921151, total cost: 264.103638
+cost: 3.095276, total cost: 376.365124
+cost: 3.018433, total cost: 487.773652
+cost: 3.015599, total cost: 598.574574
+cost: 2.956295, total cost: 708.381604
+cost: 2.904126, total cost: 815.890150
+cost: 2.657917, total cost: 917.656492
+cost: 2.272645, total cost: 1008.108567
+Epoch: 1 Training mean loss: 2.870, accuracy: 0.185
+Epoch: 1 Validation mean loss 2.057, accuracy: 0.433
+Epoch: 2 Learning rate: 1.000
+cost: 2.145558, total cost: 23.293813
+cost: 1.869928, total cost: 96.365188
+cost: 1.527251, total cost: 161.408082
+cost: 1.616030, total cost: 223.711486
+cost: 1.444382, total cost: 279.061080
+cost: 1.398573, total cost: 334.326744
+cost: 1.268349, total cost: 383.314909
+cost: 1.264589, total cost: 429.458082
+cost: 1.120987, total cost: 473.879593
+cost: 0.986198, total cost: 513.412247
+Epoch: 2 Training mean loss: 1.453, accuracy: 0.570
+Epoch: 2 Validation mean loss 0.933, accuracy: 0.741
+Epoch: 3 Learning rate: 1.000
+cost: 0.982259, total cost: 10.528905
+cost: 0.800774, total cost: 44.285781
+cost: 0.709018, total cost: 75.502207
+cost: 0.651437, total cost: 105.296361
+cost: 0.763200, total cost: 131.113542
+cost: 0.673728, total cost: 155.327020
+cost: 0.778720, total cost: 175.019063
+cost: 0.605547, total cost: 194.628736
+cost: 0.418609, total cost: 213.150270
+cost: 0.407083, total cost: 228.918747
+Epoch: 3 Training mean loss: 0.648, accuracy: 0.820
+Epoch: 3 Validation mean loss 0.661, accuracy: 0.813
+Epoch: 4 Learning rate: 1.000
+cost: 0.425348, total cost: 5.121075
+cost: 0.302541, total cost: 19.944479
+cost: 0.306164, total cost: 33.490925
+cost: 0.320962, total cost: 48.128758
+cost: 0.301036, total cost: 60.208206
+cost: 0.224227, total cost: 71.677140
+cost: 0.344982, total cost: 81.251480
+cost: 0.316522, total cost: 91.328898
+cost: 0.221631, total cost: 101.381238
+cost: 0.239905, total cost: 110.877289
+Epoch: 4 Training mean loss: 0.318, accuracy: 0.911
+Epoch: 4 Validation mean loss 0.330, accuracy: 0.905
+Epoch: 5 Learning rate: 1.000
+cost: 0.296260, total cost: 3.857768
+cost: 0.189037, total cost: 13.435868
+cost: 0.223270, total cost: 22.109038
+cost: 0.227435, total cost: 32.195570
+cost: 0.214703, total cost: 40.492960
+cost: 0.147834, total cost: 48.471642
+cost: 0.255633, total cost: 55.264098
+cost: 0.220434, total cost: 62.552827
+cost: 0.171743, total cost: 70.238245
+cost: 0.188543, total cost: 77.691434
+Epoch: 5 Training mean loss: 0.225, accuracy: 0.938
+Epoch: 5 Validation mean loss 0.289, accuracy: 0.913
+Epoch: 6 Learning rate: 0.500
+cost: 0.241997, total cost: 2.889893
+cost: 0.149178, total cost: 10.260121
+cost: 0.153787, total cost: 16.847479
+cost: 0.177732, total cost: 24.781276
+cost: 0.175527, total cost: 31.401285
+cost: 0.099991, total cost: 37.657889
+cost: 0.199269, total cost: 43.128049
+cost: 0.152700, total cost: 48.990603
+cost: 0.136198, total cost: 55.027258
+cost: 0.157141, total cost: 61.219667
+Epoch: 6 Training mean loss: 0.178, accuracy: 0.949
+Epoch: 6 Validation mean loss 0.261, accuracy: 0.921
+Epoch: 7 Learning rate: 0.250
+cost: 0.217641, total cost: 2.390011
+cost: 0.137982, total cost: 8.917797
+cost: 0.141736, total cost: 14.717236
+cost: 0.160078, total cost: 21.922634
+cost: 0.155014, total cost: 27.920533
+cost: 0.086113, total cost: 33.564404
+cost: 0.177231, total cost: 38.467855
+cost: 0.140437, total cost: 43.724936
+cost: 0.118980, total cost: 49.176388
+cost: 0.144819, total cost: 54.845022
+Epoch: 7 Training mean loss: 0.160, accuracy: 0.953
+Epoch: 7 Validation mean loss 0.251, accuracy: 0.923
+Epoch: 8 Learning rate: 0.125
+cost: 0.204309, total cost: 2.195745
+cost: 0.130878, total cost: 8.342325
+cost: 0.135320, total cost: 13.802049
+cost: 0.151268, total cost: 20.654775
+cost: 0.145477, total cost: 26.352344
+cost: 0.079207, total cost: 31.725588
+cost: 0.169546, total cost: 36.379739
+cost: 0.134375, total cost: 41.338967
+cost: 0.110780, total cost: 46.512100
+cost: 0.137166, total cost: 51.918543
+Epoch: 8 Training mean loss: 0.152, accuracy: 0.955
+Epoch: 8 

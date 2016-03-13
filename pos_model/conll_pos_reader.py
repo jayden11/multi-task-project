@@ -5,6 +5,7 @@ from __future__ import division
 from __future__ import print_function
 
 import collections
+from collections import defaultdict
 import os
 import sys
 import time
@@ -52,9 +53,14 @@ def _build_vocab(filename, padding_width, col_val):
     # can be used for classifications and input vocab
     data = _read_tokens(filename, padding_width, col_val)
     counter = collections.Counter(data)
+    # get rid of all words with frequency == 1
+    counter = {k: v for k, v in counter.items() if v > 1}
+    counter['<unk>'] = 10000
     count_pairs = sorted(counter.items(), key=lambda x: (-x[1], x[0]))
     words, _ = list(zip(*count_pairs))
+    # add in unknown token at the beginning, so with index 1
     word_to_id = dict(zip(words, range(len(words))))
+
     return word_to_id
 
 
@@ -66,7 +72,8 @@ def _build_vocab(filename, padding_width, col_val):
 def _file_to_word_ids(filename, word_to_id, padding_width):
     # assumes _build_vocab has been called first as is called word to id
     data = _read_tokens(filename, padding_width, 0)
-    return [word_to_id[word] for word in data]
+    default_value = word_to_id['<unk>']
+    return [word_to_id.get(word, default_value) for word in data]
 
 """
     1.2. POS Methods
@@ -79,26 +86,34 @@ def _int_to_POS(pos_int, POS_vocab_size):
     np.put(a, pos_int-1, 1)
     return a
 
+def _seq_POS(pos_integers, POS_vocab_size):
+    return np.vstack(_int_to_POS(pos, POS_vocab_size) for pos in pos_integers)
 
 def _file_to_POS_classifications(filename, POS_to_id, padding_width):
     # assumes _build_vocab has been called first and is called POS to id
     data = _read_tokens(filename, padding_width, 1)
-    return [POS_to_id[word] for word in data]
+    return [POS_to_id[tag] for tag in data]
 
 
 def _raw_x_y_data(data_path, num_steps):
-    train_path = os.path.join(data_path, "train_custom.txt")
-    valid_path = os.path.join(data_path, "val_custom.txt")
-    
+    train = "train_custom.txt"
+    valid = "val_custom.txt"
+
+    train_path = os.path.join(data_path, train)
+    valid_path = os.path.join(data_path, valid)
+
     word_to_id = _build_vocab(train_path, num_steps-1, 0)
     POS_to_id = _build_vocab(train_path, num_steps-1, 1)
 
-    word_data = _file_to_word_ids(train_path, word_to_id, num_steps-1)
-    pos_data = _file_to_POS_classifications(train_path, POS_to_id, num_steps-1)
+    word_data_t = _file_to_word_ids(train_path, word_to_id, num_steps-1)
+    pos_data_t = _file_to_POS_classifications(train_path, POS_to_id, num_steps-1)
 
-    word_vocab_size = len(word_to_id)
-    pos_vocab_size = len(POS_to_id)
-    return word_data, pos_data, word_vocab_size, pos_vocab_size
+    word_data_v = _file_to_word_ids(valid_path, word_to_id, num_steps-1)
+    pos_data_v = _file_to_POS_classifications(valid_path, POS_to_id, num_steps-1)
+
+    word_vocab = len(word_to_id)
+    pos_vocab = len(POS_to_id)
+    return word_data_t, pos_data_t, word_data_v, pos_data_v, word_vocab, pos_vocab
 
 
 """
@@ -159,7 +174,7 @@ def _create_batches(raw_words, raw_pos, batch_size, num_steps, pos_vocab_size):
 
     for i in range(epoch_size):
         x = word_data[:, i*num_steps:(i+1)*num_steps]
-        y = np.vstack(_int_to_POS(pos, pos_vocab_size) for pos in pos_data[
-            :, (i+1)*num_steps])
+        y = np.vstack(_seq_POS(pos_data[pos, i*num_steps:(i+1)*num_steps],
+                      pos_vocab_size) for pos in range(20))
         y = y.astype(np.int32)
         yield (x, y)
