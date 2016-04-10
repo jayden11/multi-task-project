@@ -2,20 +2,12 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-import math
-import time
-import random
-
 import tensorflow as tf
-import tensorflow.python.platform
 
 from tensorflow.models.rnn import rnn_cell
 from tensorflow.models.rnn import rnn
 
-import model_reader as reader
-import numpy as np
 import pdb
-import pandas as pd
 
 class Shared_Model(object):
 
@@ -157,7 +149,7 @@ class Shared_Model(object):
                                                                     name='xentropy')
             loss = tf.reduce_mean(cross_entropy, name='xentropy_mean')
             (_, int_targets) = tf.nn.top_k(labels, 1)
-            (_, int_predictions) = tf.nn.top_k(logits,1)
+            (_, int_predictions) = tf.nn.top_k(logits, 1)
             num_true = tf.reduce_sum(tf.cast(tf.equal(int_targets, int_predictions), tf.float32))
             accuracy = num_true / (num_steps*batch_size)
             return loss, accuracy, int_predictions, int_targets
@@ -202,18 +194,19 @@ class Shared_Model(object):
         encoding = tf.transpose(encoding, perm=[1, 0, 2])
 
         pos_logits, pos_states = __pos_private(encoding, config)
-        pos_loss, _, pos_int_pred, pos_int_targ = __loss(pos_logits, self.pos_targets)
+        pos_loss, pos_accuracy, pos_int_pred, pos_int_targ = __loss(pos_logits, self.pos_targets)
         self.pos_loss = pos_loss
         self.pos_last_state = pos_states[-1]
         self.pos_int_pred = pos_int_pred
         self.pos_int_targ = pos_int_targ
 
         chunk_logits, chunk_states = __chunk_private(encoding, config)
-        chunk_loss, _, chunk_int_pred, chunk_int_targ = __loss(chunk_logits, self.chunk_targets)
+        chunk_loss, chunk_accuracy, chunk_int_pred, chunk_int_targ = __loss(chunk_logits, self.chunk_targets)
         self.chunk_loss = chunk_loss
         self.chunk_last_state = chunk_states[-1]
         self.chunk_int_pred = chunk_int_pred
         self.chunk_int_targ = chunk_int_targ
+        self.joint_loss = chunk_loss + pos_loss
 
         if not is_training:
             return
