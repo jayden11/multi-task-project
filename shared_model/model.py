@@ -202,10 +202,10 @@ def main(model_type):
 
 
         print('saving')
-        train_custom = pd.read_csv('/Users/jonathangodwin/project/data/train_custom.txt', sep= ' ',header=None).as_matrix()
-        valid_custom = pd.read_csv('/Users/jonathangodwin/project/data/val_custom.txt', sep= ' ',header=None).as_matrix()
-        combined = pd.read_csv('/Users/jonathangodwin/project/data/train.txt', sep= ' ',header=None).as_matrix()
-        test_data = pd.read_csv('/Users/jonathangodwin/project/data/test.txt', sep= ' ',header=None).as_matrix()
+        train_custom = pd.read_csv('../../data/train_custom.txt', sep= ' ',header=None).as_matrix()
+        valid_custom = pd.read_csv('../../data/val_custom.txt', sep= ' ',header=None).as_matrix()
+        combined = pd.read_csv('../../data/train.txt', sep= ' ',header=None).as_matrix()
+        test_data = pd.read_csv('../../data/test.txt', sep= ' ',header=None).as_matrix()
 
         chunk_pred_train = np.concatenate((train_custom, chunkp_t), axis=1)
         chunk_pred_val = np.concatenate((valid_custom, chunkp_v), axis=1)
