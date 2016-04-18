@@ -108,10 +108,10 @@ def _file_to_tag_classifications(filename, tag_to_id, padding_width, col_val):
 
 
 def raw_x_y_data(data_path, num_steps):
-    train = "train_custom.txt"
-    valid = "val_custom.txt"
-    train_valid = "train.txt"
-    comb = "comb.txt"
+    train = "train.txt"
+    valid = "validation.txt"
+    train_valid = "train_val_combined.txt"
+    comb = "all_combined.txt"
     test = "test.txt"
 
     train_path = os.path.join(data_path, train)

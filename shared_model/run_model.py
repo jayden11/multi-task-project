@@ -15,25 +15,26 @@ import argparse
 
 class Config(object):
     """Configuration for the network"""
-    init_scale = 0.1
-    learning_rate = 0.001
-    max_grad_norm = 5
-    num_steps = 20
-    encoder_size = 200
-    pos_decoder_size = 200
-    chunk_decoder_size = 200
-    max_epoch = 50
-    keep_prob = 0.5
-    batch_size = 64
-    vocab_size = 20000
-    num_pos_tags = 45
-    num_chunk_tags = 23
+    init_scale = 0.1 # initialisation scale
+    learning_rate = 0.001 # learning_rate (if you are using SGD)
+    max_grad_norm = 5 # for gradient clipping
+    num_steps = 20 # length of sequence
+    encoder_size = 200 # first layer
+    pos_decoder_size = 200 # second layer
+    chunk_decoder_size = 200 # second layer
+    max_epoch = 50 # maximum number of epochs
+    keep_prob = 0.5 # for dropout
+    batch_size = 64 # number of sequence
+    vocab_size = 20000 # this isn't used - need to look at this
+    num_pos_tags = 45 # hard coded, should it be?
+    num_chunk_tags = 23 # as above
 
-def main(model_type):
+def main(model_type, dataset_path):
     """Main."""
     config = Config()
+    raw_data_path = dataset_path + '/data'
     raw_data = reader.raw_x_y_data(
-        '/Users/jonathangodwin/project/Conll/data/', config.num_steps)
+        raw_data_path, config.num_steps)
     words_t, pos_t, chunk_t, words_v, \
         pos_v, chunk_v, word_to_id, pos_to_id, \
         chunk_to_id, words_test, pos_test, chunk_test, \
@@ -51,9 +52,9 @@ def main(model_type):
             m = Shared_Model(is_training=True, config=config)
         with tf.variable_scope("hyp_model", reuse=True, initializer=initializer):
             mvalid = Shared_Model(is_training=False, config=config)
-        with tf.variable_scope("fin_model", reuse=None, initializer=initializer):
+        with tf.variable_scope("final_model", reuse=None, initializer=initializer):
             mTrain = Shared_Model(is_training=True, config=config)
-        with tf.variable_scope("fin_model", reuse=True, initializer=initializer):
+        with tf.variable_scope("final_model", reuse=True, initializer=initializer):
             mTest = Shared_Model(is_training=False, config=config)
 
         tf.initialize_all_variables().run()
@@ -157,18 +158,18 @@ def main(model_type):
                 best_epoch = [i+1, valid_loss]
 
         # Save loss & accuracy plots
-        np.savetxt('../../data/current_outcome/loss/valid_loss_stats.txt', valid_loss_stats)
-        np.savetxt('../../data/current_outcome/loss/valid_pos_loss_stats.txt', valid_pos_loss_stats)
-        np.savetxt('../../data/current_outcome/loss/valid_chunk_loss_stats.txt', valid_chunk_loss_stats)
+        np.savetxt(dataset_path + '/current_outcome/loss/valid_loss_stats.txt', valid_loss_stats)
+        np.savetxt(dataset_path + '/current_outcome/loss/valid_pos_loss_stats.txt', valid_pos_loss_stats)
+        np.savetxt(dataset_path + '/current_outcome/loss/valid_chunk_loss_stats.txt', valid_chunk_loss_stats)
 
-        np.savetxt('../../data/current_outcome/accuracy/valid_pos_stats.txt', valid_pos_stats)
-        np.savetxt('../../data/current_outcome/accuracy/valid_chunk_stats.txt', valid_chunk_stats)
+        np.savetxt(dataset_path + '/current_outcome/accuracy/valid_pos_stats.txt', valid_pos_stats)
+        np.savetxt(dataset_path + '/current_outcome/accuracy/valid_chunk_stats.txt', valid_chunk_stats)
 
-        np.savetxt('../../data/current_outcome/loss/train_loss_stats.txt', train_loss_stats)
-        np.savetxt('../../data/current_outcome/loss/train_pos_loss_stats.txt', train_pos_loss_stats)
-        np.savetxt('../../data/current_outcome/loss/train_chunk_loss_stats.txt', train_chunk_loss_stats)
-        np.savetxt('../../data/current_outcome/accuracy/train_pos_stats.txt', train_pos_stats)
-        np.savetxt('../../data/current_outcome/accuracy/train_chunk_stats.txt', train_chunk_stats)
+        np.savetxt(dataset_path + '/current_outcome/loss/train_loss_stats.txt', train_loss_stats)
+        np.savetxt(dataset_path + '/current_outcome/loss/train_pos_loss_stats.txt', train_pos_loss_stats)
+        np.savetxt(dataset_path + '/current_outcome/loss/train_chunk_loss_stats.txt', train_chunk_loss_stats)
+        np.savetxt(dataset_path + '/current_outcome/accuracy/train_pos_stats.txt', train_pos_stats)
+        np.savetxt(dataset_path + '/current_outcome/accuracy/train_chunk_stats.txt', train_chunk_stats)
 
         # Train given epoch parameter
         print('Train Given Best Epoch Parameter :' + str(best_epoch[0]))
@@ -198,14 +199,11 @@ def main(model_type):
         chunkp_test = reader._res_to_list(chunkp_test, config.batch_size, config.num_steps,
                                           chunk_to_id, len(words_test))
 
-
-
-
         print('saving')
-        train_custom = pd.read_csv('../../data/train_custom.txt', sep= ' ',header=None).as_matrix()
-        valid_custom = pd.read_csv('../../data/val_custom.txt', sep= ' ',header=None).as_matrix()
-        combined = pd.read_csv('../../data/train.txt', sep= ' ',header=None).as_matrix()
-        test_data = pd.read_csv('../../data/test.txt', sep= ' ',header=None).as_matrix()
+        train_custom = pd.read_csv(raw_data_path + '/train.txt', sep= ' ',header=None).as_matrix()
+        valid_custom = pd.read_csv(raw_data_path + '/validation.txt', sep= ' ',header=None).as_matrix()
+        combined = pd.read_csv(raw_data_path + '/all_combined.txt', sep= ' ',header=None).as_matrix()
+        test_data = pd.read_csv(raw_data_path + '/test.txt', sep= ' ',header=None).as_matrix()
 
         chunk_pred_train = np.concatenate((train_custom, chunkp_t), axis=1)
         chunk_pred_val = np.concatenate((valid_custom, chunkp_v), axis=1)
@@ -216,30 +214,31 @@ def main(model_type):
         pos_pred_c = np.concatenate((combined, posp_c), axis=1)
         pos_pred_test = np.concatenate((test_data, posp_test), axis=1)
 
-        np.savetxt('../../data/current_outcome/predictions/chunk_pred_train.txt',
+        np.savetxt(dataset_path + '/current_outcome/predictions/chunk_pred_train.txt',
                    chunk_pred_train, fmt='%s')
-        np.savetxt('../../data/current_outcome/predictions/chunk_pred_val.txt',
+        np.savetxt(dataset_path + '/current_outcome/predictions/chunk_pred_val.txt',
                    chunk_pred_val, fmt='%s')
-        np.savetxt('../../data/current_outcome/predictions/chunk_pred_combined.txt',
+        np.savetxt(dataset_path + '/current_outcome/predictions/chunk_pred_combined.txt',
                    chunk_pred_c, fmt='%s')
-        np.savetxt('../../data/current_outcome/predictions/chunk_pred_test.txt',
+        np.savetxt(dataset_path + '/current_outcome/predictions/chunk_pred_test.txt',
                    chunk_pred_test, fmt='%s')
-        np.savetxt('../../data/current_outcome/predictions/pos_pred_train.txt',
+        np.savetxt(dataset_path + '/current_outcome/predictions/pos_pred_train.txt',
                    pos_pred_train, fmt='%s')
-        np.savetxt('../../data/current_outcome/predictions/pos_pred_val.txt',
+        np.savetxt(dataset_path + '/current_outcome/predictions/pos_pred_val.txt',
                    pos_pred_val, fmt='%s')
-        np.savetxt('../../data/current_outcome/predictions/pos_pred_combined.txt',
+        np.savetxt(dataset_path + '/current_outcome/predictions/pos_pred_combined.txt',
                    pos_pred_c, fmt='%s')
-        np.savetxt('../../data/current_outcome/predictions/pos_pred_test.txt',
+        np.savetxt(dataset_path + '/current_outcome/predictions/pos_pred_test.txt',
                    pos_pred_test, fmt='%s')
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--model_type")
+    parser.add_argument("--dataset_path")
     args = parser.parse_args()
     if (str(args.model_type) != "POS") and (str(args.model_type) != "CHUNK"):
         args.model_type = 'JOINT'
     print('Model Selected : ' + str(args.model_type))
-    main(str(args.model_type))
+    main(str(args.model_type),str(args.dataset_path))
     #tf.app.run()
