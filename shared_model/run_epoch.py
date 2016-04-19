@@ -43,23 +43,20 @@ def run_epoch(session, m, words, pos, chunk, pos_vocab_size, chunk_vocab_size,
                 eval_op = tf.no_op()
             else:
                 eval_op = m.pos_op
-            final_state = m.pos_last_state
         elif model_type == 'CHUNK':
             if valid:
                 eval_op = tf.no_op()
             else:
                 eval_op = m.chunk_op
-            final_state = m.chunk_last_state
         else:
             if valid:
                 eval_op = tf.no_op()
             else:
                 eval_op = m.joint_op
-            final_state = m.chunk_last_state
 
-        joint_loss, state, _, pos_int_pred, chunk_int_pred, pos_int_true, \
+        joint_loss, _, pos_int_pred, chunk_int_pred, pos_int_true, \
             chunk_int_true, pos_loss, chunk_loss = \
-            session.run([m.joint_loss, final_state, eval_op, m.pos_int_pred,
+            session.run([m.joint_loss, eval_op, m.pos_int_pred,
                          m.chunk_int_pred, m.pos_int_targ, m.chunk_int_targ,
                          m.pos_loss, m.chunk_loss],
                         {m.input_data: x,

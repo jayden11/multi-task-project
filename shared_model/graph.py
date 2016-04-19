@@ -196,14 +196,14 @@ class Shared_Model(object):
         pos_logits, pos_states = __pos_private(encoding, config)
         pos_loss, pos_accuracy, pos_int_pred, pos_int_targ = __loss(pos_logits, self.pos_targets)
         self.pos_loss = pos_loss
-        self.pos_last_state = pos_states[0]
+        # self.pos_last_state = pos_states[0]
         self.pos_int_pred = pos_int_pred
         self.pos_int_targ = pos_int_targ
 
         chunk_logits, chunk_states = __chunk_private(encoding, config)
         chunk_loss, chunk_accuracy, chunk_int_pred, chunk_int_targ = __loss(chunk_logits, self.chunk_targets)
         self.chunk_loss = chunk_loss
-        self.chunk_last_state = chunk_states[0]
+        # self.chunk_last_state = chunk_states[0]
         self.chunk_int_pred = chunk_int_pred
         self.chunk_int_targ = chunk_int_targ
         self.joint_loss = chunk_loss + pos_loss
