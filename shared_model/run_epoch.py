@@ -15,7 +15,6 @@ from tensorflow.models.rnn import rnn
 import model_reader as reader
 import numpy as np
 import pdb
-import pandas as pd
 from graph import Shared_Model
 
 

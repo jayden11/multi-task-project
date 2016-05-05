@@ -8,7 +8,7 @@ import collections
 import os
 import sys
 import time
-import pandas as pd
+#import pandas as pd
 import pdb
 
 import numpy as np
@@ -39,7 +39,7 @@ def _read_tokens(filename, padding_val, col_val):
     # 1 - POS
     # 2 - tags
 
-    words = pd.read_csv(filename, sep=' ', header=None)[col_val].as_matrix()
+    words = np.transpose(np.loadtxt(filename, dtype='object', delimiter=" "))[col_val]
     # padding token '0'
     return np.pad(
         words, pad_width=(padding_val, 0), mode='constant', constant_values=0)

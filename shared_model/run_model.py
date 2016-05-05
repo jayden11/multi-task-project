@@ -7,7 +7,7 @@ import tensorflow.python.platform
 import model_reader as reader
 import numpy as np
 import pdb
-import pandas as pd
+#import pandas as pd
 from graph import Shared_Model
 from run_epoch import run_epoch
 import argparse
@@ -205,10 +205,10 @@ def main(model_type, dataset_path):
                                           chunk_to_id, len(words_test))
 
         print('saving')
-        train_custom = pd.read_csv(raw_data_path + '/train.txt', sep= ' ',header=None).as_matrix()
-        valid_custom = pd.read_csv(raw_data_path + '/validation.txt', sep= ' ',header=None).as_matrix()
-        combined = pd.read_csv(raw_data_path + '/all_combined.txt', sep= ' ',header=None).as_matrix()
-        test_data = pd.read_csv(raw_data_path + '/test.txt', sep= ' ',header=None).as_matrix()
+        train_custom = np.loadtxt(raw_data_path + '/train.txt', delimiter= ' ',dtype="object")
+        valid_custom = np.loadtxt(raw_data_path + '/validation.txt', delimiter= ' ',dtype="object")
+        combined = np.loadtxt(raw_data_path + '/all_combined.txt', delimiter= ' ',dtype="object")
+        test_data = np.loadtxt(raw_data_path + '/test.txt', delimiter= ' ',dtype="object")
 
         chunk_pred_train = np.concatenate((train_custom, chunkp_t), axis=1)
         chunk_pred_val = np.concatenate((valid_custom, chunkp_v), axis=1)
