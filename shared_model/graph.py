@@ -25,8 +25,9 @@ class Shared_Model(object):
         self.vocab_size = vocab_size = config.vocab_size
         self.num_pos_tags = num_pos_tags = config.num_pos_tags
         self.num_chunk_tags = num_chunk_tags = config.num_chunk_tags
-
         self.input_data = tf.placeholder(tf.int32, [batch_size, num_steps])
+        self.word_embedding_size = word_embedding_size = config.word_embedding_size
+        self.pos_embedding_size = pos_embedding_size = config.encoder_size # must be same size as encoder
 
         # add input size - size of pos tags
         self.pos_targets = tf.placeholder(tf.float32, [(batch_size*num_steps),
@@ -80,6 +81,7 @@ class Shared_Model(object):
 
                 initial_state = cell.zero_state(config.batch_size, tf.float32)
 
+                # puts it into batch_size X input_size
                 inputs = [tf.squeeze(input_, [1])
                           for input_ in tf.split(1, config.num_steps,
                                                  encoder_units)]
@@ -99,15 +101,24 @@ class Shared_Model(object):
 
             return logits, decoder_states
 
-        def __chunk_private(encoder_units, config):
+        def __chunk_private(encoder_units, pos_prediction, config):
             """Decode model for chunks
 
             Args:
-                encoder_units - these are the encoder units
+                encoder_units - these are the encoder units:
+                [batch_size X encoder_size] with the one the pos prediction
+                pos_prediction:
+                must be the same size as the encoder_size
 
             returns:
                 logits
             """
+            # concatenate the encoder_units and the pos_prediction
+
+            pos_prediction = tf.reshape(pos_prediction,
+                [batch_size, num_steps, pos_embedding_size])
+            chunk_inputs = tf.concat(2, [pos_prediction, encoder_units])
+
             with tf.variable_scope("chunk_decoder"):
                 cell = rnn_cell.BasicLSTMCell(config.chunk_decoder_size, forget_bias=1.0)
 
@@ -117,9 +128,10 @@ class Shared_Model(object):
 
                 initial_state = cell.zero_state(config.batch_size, tf.float32)
 
+                # this function puts the 3d tensor into a 2d tensor: batch_size x input size
                 inputs = [tf.squeeze(input_, [1])
                           for input_ in tf.split(1, config.num_steps,
-                                                 encoder_units)]
+                                                 chunk_inputs)]
 
                 decoder_outputs, decoder_states = rnn.rnn(cell,
                                                           inputs, initial_state=initial_state,
@@ -181,8 +193,9 @@ class Shared_Model(object):
             return train_op
 
         with tf.device("/cpu:0"):
-            embedding = tf.get_variable("embedding", [vocab_size, encoder_size])
-            inputs = tf.nn.embedding_lookup(embedding, self.input_data)
+            word_embedding = tf.get_variable("word_embedding", [vocab_size, word_embedding_size])
+            inputs = tf.nn.embedding_lookup(word_embedding, self.input_data)
+            pos_embedding = tf.get_variable("pos_embedding", [num_pos_tags, pos_embedding_size])
 
         if is_training and config.keep_prob < 1:
             inputs = tf.nn.dropout(inputs, config.keep_prob)
@@ -200,7 +213,9 @@ class Shared_Model(object):
         self.pos_int_pred = pos_int_pred
         self.pos_int_targ = pos_int_targ
 
-        chunk_logits, chunk_states = __chunk_private(encoding, config)
+        pos_to_chunk_embed = tf.nn.embedding_lookup(pos_embedding,pos_int_pred)
+
+        chunk_logits, chunk_states = __chunk_private(encoding, pos_to_chunk_embed, config)
         chunk_loss, chunk_accuracy, chunk_int_pred, chunk_int_targ = __loss(chunk_logits, self.chunk_targets)
         self.chunk_loss = chunk_loss
         # self.chunk_last_state = chunk_states[0]

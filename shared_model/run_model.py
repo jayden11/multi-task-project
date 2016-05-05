@@ -19,6 +19,7 @@ class Config(object):
     learning_rate = 0.001 # learning_rate (if you are using SGD)
     max_grad_norm = 5 # for gradient clipping
     num_steps = 20 # length of sequence
+    word_embedding_size = 200 # size of the embedding
     encoder_size = 200 # first layer
     pos_decoder_size = 200 # second layer
     chunk_decoder_size = 200 # second layer
@@ -28,6 +29,7 @@ class Config(object):
     vocab_size = 20000 # this isn't used - need to look at this
     num_pos_tags = 45 # hard coded, should it be?
     num_chunk_tags = 23 # as above
+    pos_embedding_size = 200
 
 def main(model_type, dataset_path):
     """Main."""
@@ -48,10 +50,13 @@ def main(model_type, dataset_path):
         initializer = tf.random_uniform_initializer(-config.init_scale,
                                                     config.init_scale)
 
+        # model to train hyperparameters on
         with tf.variable_scope("hyp_model", reuse=None, initializer=initializer):
             m = Shared_Model(is_training=True, config=config)
         with tf.variable_scope("hyp_model", reuse=True, initializer=initializer):
             mvalid = Shared_Model(is_training=False, config=config)
+
+        # model that trains, given hyper-parameters
         with tf.variable_scope("final_model", reuse=None, initializer=initializer):
             mTrain = Shared_Model(is_training=True, config=config)
         with tf.variable_scope("final_model", reuse=True, initializer=initializer):
