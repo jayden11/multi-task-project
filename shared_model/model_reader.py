@@ -52,9 +52,8 @@ def _build_vocab(filename, padding_width, col_val):
     # get rid of all words with frequency == 1
     counter = {k: v for k, v in counter.items() if v > 1}
     counter['<unk>'] = 10000
-    count_pairs = sorted(counter.items(), key=lambda x: (-x[1], x[0]))
+    count_pairs = sorted(counter.items(), key=lambda x: -x[1])
     words, _ = list(zip(*count_pairs))
-    # add in unknown token at the beginning, so with index 1
     word_to_id = dict(zip(words, range(len(words))))
 
     return word_to_id
@@ -63,9 +62,8 @@ def _build_tags(filename, padding_width, col_val):
     # can be used for classifications and input vocab
     data = _read_tokens(filename, padding_width, col_val)
     counter = collections.Counter(data)
-    count_pairs = sorted(counter.items(), key=lambda x: (-x[1], x[0]))
+    count_pairs = sorted(counter.items(), key=lambda x: -x[1])
     words, _ = list(zip(*count_pairs))
-    # add in unknown token at the beginning, so with index 1
     tag_to_id = dict(zip(words, range(len(words))))
 
     return tag_to_id
