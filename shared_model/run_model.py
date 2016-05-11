@@ -163,6 +163,7 @@ def main(model_type, dataset_path):
                 best_epoch = [i+1, valid_loss]
 
         # Save loss & accuracy plots
+        print("WHAT THE HELL")
         np.savetxt(dataset_path + '/current_outcome/loss/valid_loss_stats.txt', valid_loss_stats)
         np.savetxt(dataset_path + '/current_outcome/loss/valid_pos_loss_stats.txt', valid_pos_loss_stats)
         np.savetxt(dataset_path + '/current_outcome/loss/valid_chunk_loss_stats.txt', valid_chunk_loss_stats)

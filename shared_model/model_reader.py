@@ -223,7 +223,7 @@ def _int_to_string(int_pred, d):
     # integers are the Values
     keys = []
     for x in int_pred:
-        keys.append([k for k, v in d.iteritems() if v == (x)])
+        keys.append([k for k, v in d.items() if v == (x)])
 
     return keys
 
