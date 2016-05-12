@@ -27,7 +27,8 @@ class Shared_Model(object):
         self.num_chunk_tags = num_chunk_tags = config.num_chunk_tags
         self.input_data = tf.placeholder(tf.int32, [batch_size, num_steps])
         self.word_embedding_size = word_embedding_size = config.word_embedding_size
-        self.pos_embedding_size = pos_embedding_size = config.encoder_size # must be same size as encoder
+        self.pos_embedding_size = pos_embedding_size = config.pos_embedding_size
+        self.num_shared_layers = num_shared_layers = config.num_shared_layers
 
         # add input size - size of pos tags
         self.pos_targets = tf.placeholder(tf.float32, [(batch_size*num_steps),
@@ -45,6 +46,7 @@ class Shared_Model(object):
                 output units
             """
             cell = rnn_cell.BasicLSTMCell(config.encoder_size, forget_bias=1.0)
+            multi_cells = rnn_cell.MultiRNNCell([cell] * num_shared_layers)
 
             if is_training and config.keep_prob < 1:
                 cell = rnn_cell.DropoutWrapper(
