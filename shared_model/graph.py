@@ -45,17 +45,18 @@ class Shared_Model(object):
             Returns:
                 output units
             """
-            cell = rnn_cell.BasicLSTMCell(config.encoder_size, forget_bias=1.0)
-            multi_cells = rnn_cell.MultiRNNCell([cell] * num_shared_layers)
+            cell = rnn_cell.BasicLSTMCell(config.encoder_size)
+
+            inputs = [tf.squeeze(input_, [1])
+                      for input_ in tf.split(1, config.num_steps, input_data)]
 
             if is_training and config.keep_prob < 1:
                 cell = rnn_cell.DropoutWrapper(
                     cell, output_keep_prob=config.keep_prob)
 
-            initial_state = cell.zero_state(config.batch_size, tf.float32)
+            cell = rnn_cell.MultiRNNCell([cell] * config.num_shared_layers)
 
-            inputs = [tf.squeeze(input_, [1])
-                      for input_ in tf.split(1, config.num_steps, input_data)]
+            initial_state = cell.zero_state(config.batch_size, tf.float32)
 
             encoder_outputs, encoder_states = rnn.rnn(cell, inputs,
                                                       initial_state=initial_state,
