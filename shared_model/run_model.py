@@ -163,7 +163,6 @@ def main(model_type, dataset_path):
                 best_epoch = [i+1, valid_loss]
 
         # Save loss & accuracy plots
-        print("WHAT THE HELL")
         np.savetxt(dataset_path + '/current_outcome/loss/valid_loss_stats.txt', valid_loss_stats)
         np.savetxt(dataset_path + '/current_outcome/loss/valid_pos_loss_stats.txt', valid_pos_loss_stats)
         np.savetxt(dataset_path + '/current_outcome/loss/valid_chunk_loss_stats.txt', valid_chunk_loss_stats)
@@ -222,21 +221,26 @@ def main(model_type, dataset_path):
 
         np.savetxt(dataset_path + '/current_outcome/predictions/chunk_pred_train.txt',
                    chunk_pred_train, fmt='%s')
+        print('writing to ' + dataset_path + '/current_outcome/predictions/chunk_pred_train.txt')
         np.savetxt(dataset_path + '/current_outcome/predictions/chunk_pred_val.txt',
                    chunk_pred_val, fmt='%s')
+        print('writing to ' + dataset_path + '/current_outcome/predictions/chunk_pred_val.txt')
         np.savetxt(dataset_path + '/current_outcome/predictions/chunk_pred_combined.txt',
                    chunk_pred_c, fmt='%s')
+        print('writing to ' + dataset_path + '/current_outcome/predictions/chunk_pred_val.txt')
         np.savetxt(dataset_path + '/current_outcome/predictions/chunk_pred_test.txt',
                    chunk_pred_test, fmt='%s')
+        print('writing to ' + dataset_path + '/current_outcome/predictions/chunk_pred_val.txt')
         np.savetxt(dataset_path + '/current_outcome/predictions/pos_pred_train.txt',
                    pos_pred_train, fmt='%s')
+        print('writing to ' + dataset_path + '/current_outcome/predictions/chunk_pred_val.txt')
         np.savetxt(dataset_path + '/current_outcome/predictions/pos_pred_val.txt',
                    pos_pred_val, fmt='%s')
+        print('writing to ' + dataset_path + '/current_outcome/predictions/chunk_pred_val.txt')
         np.savetxt(dataset_path + '/current_outcome/predictions/pos_pred_combined.txt',
                    pos_pred_c, fmt='%s')
         np.savetxt(dataset_path + '/current_outcome/predictions/pos_pred_test.txt',
                    pos_pred_test, fmt='%s')
-        print('writing to ' + dataset_path)
 
 
 if __name__ == "__main__":
