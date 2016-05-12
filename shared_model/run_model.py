@@ -236,6 +236,7 @@ def main(model_type, dataset_path):
                    pos_pred_c, fmt='%s')
         np.savetxt(dataset_path + '/current_outcome/predictions/pos_pred_test.txt',
                    pos_pred_test, fmt='%s')
+        print('writing to ' + dataset_path)
 
 
 if __name__ == "__main__":
