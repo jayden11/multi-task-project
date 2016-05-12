@@ -23,7 +23,7 @@ class Config(object):
     encoder_size = 200 # first layer
     pos_decoder_size = 200 # second layer
     chunk_decoder_size = 200 # second layer
-    max_epoch = 50 # maximum number of epochs
+    max_epoch = 1 # maximum number of epochs
     keep_prob = 0.5 # for dropout
     batch_size = 64 # number of sequence
     vocab_size = 20000 # this isn't used - need to look at this
@@ -209,8 +209,8 @@ def main(model_type, dataset_path):
         valid_custom = np.loadtxt(raw_data_path + '/validation.txt', delimiter= ' ',dtype="object")
         combined = np.loadtxt(raw_data_path + '/all_combined.txt', delimiter= ' ',dtype="object")
         test_data = np.loadtxt(raw_data_path + '/test.txt', delimiter= ' ',dtype="object")
-        
-        print('loaded text')        
+
+        print('loaded text')
 
         chunk_pred_train = np.concatenate((train_custom, chunkp_t), axis=1)
         chunk_pred_val = np.concatenate((valid_custom, chunkp_v), axis=1)
@@ -222,7 +222,7 @@ def main(model_type, dataset_path):
         pos_pred_test = np.concatenate((test_data, posp_test), axis=1)
 
         print('finished concatenating, about to start saving')
-        
+
         np.savetxt(dataset_path + '/current_outcome/predictions/chunk_pred_train.txt',
                    chunk_pred_train, fmt='%s')
         print('writing to ' + dataset_path + '/current_outcome/predictions/chunk_pred_train.txt')
