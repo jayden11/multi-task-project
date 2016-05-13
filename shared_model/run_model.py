@@ -19,17 +19,17 @@ class Config(object):
     learning_rate = 0.001 # learning_rate (if you are using SGD)
     max_grad_norm = 5 # for gradient clipping
     num_steps = 20 # length of sequence
-    word_embedding_size = 500 # size of the embedding
-    encoder_size = 500 # first layer
-    pos_decoder_size = 500 # second layer
-    chunk_decoder_size = 500 # second layer
+    word_embedding_size = 200 # size of the embedding
+    encoder_size = 200 # first layer
+    pos_decoder_size = 200 # second layer
+    chunk_decoder_size = 200 # second layer
     max_epoch = 100 # maximum number of epochs
     keep_prob = 0.5 # for dropout
     batch_size = 64 # number of sequence
     vocab_size = 20000 # this isn't used - need to look at this
     num_pos_tags = 45 # hard coded, should it be?
     num_chunk_tags = 23 # as above
-    pos_embedding_size = 500
+    pos_embedding_size = 200
     num_shared_layers = 4
 
 def main(model_type, dataset_path):
