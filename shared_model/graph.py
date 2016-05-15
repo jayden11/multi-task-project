@@ -36,7 +36,7 @@ class Shared_Model(object):
         self.chunk_targets = tf.placeholder(tf.float32, [(batch_size*num_steps),
                                             num_chunk_tags])
 
-        def __shared_layer(input_data, config):
+        def _shared_layer(input_data, config):
             """Build the model to decoding
 
             Args:
@@ -64,7 +64,7 @@ class Shared_Model(object):
 
             return encoder_outputs, initial_state
 
-        def __pos_private(encoder_units, config):
+        def _pos_private(encoder_units, config):
             """Decode model for pos
 
             Args:
@@ -104,7 +104,7 @@ class Shared_Model(object):
 
             return logits, decoder_states
 
-        def __chunk_private(encoder_units, pos_prediction, config):
+        def _chunk_private(encoder_units, pos_prediction, config):
             """Decode model for chunks
 
             Args:
@@ -151,7 +151,7 @@ class Shared_Model(object):
 
             return logits, decoder_states
 
-        def __loss(logits, labels):
+        def _loss(logits, labels):
             """Calculate loss for both pos and chunk
                 Args:
                     logits from the decoder
@@ -169,7 +169,7 @@ class Shared_Model(object):
             accuracy = num_true / (num_steps*batch_size)
             return loss, accuracy, int_predictions, int_targets
 
-        def __training(loss, config, m):
+        def _training(loss, config, m):
             """Sets up training ops and also...
 
             Create a summarisor for tensorboard
@@ -203,25 +203,25 @@ class Shared_Model(object):
         if is_training and config.keep_prob < 1:
             inputs = tf.nn.dropout(inputs, config.keep_prob)
 
-        encoding, intial_state = __shared_layer(inputs, config)
+        encoding, intial_state = _shared_layer(inputs, config)
         self.initial_state = intial_state
 
         encoding = tf.pack(encoding)
         encoding = tf.transpose(encoding, perm=[1, 0, 2])
 
-        pos_logits, pos_states = __pos_private(encoding, config)
-        pos_loss, pos_accuracy, pos_int_pred, pos_int_targ = __loss(pos_logits, self.pos_targets)
+        pos_logits, pos_states = _pos_private(encoding, config)
+        pos_loss, pos_accuracy, pos_int_pred, pos_int_targ = _loss(pos_logits, self.pos_targets)
         self.pos_loss = pos_loss
         # self.pos_last_state = pos_states[0]
         self.pos_int_pred = pos_int_pred
         self.pos_int_targ = pos_int_targ
+        with tf.device("/cpu:0"):
+            pos_to_chunk_embed = tf.nn.embedding_lookup(pos_embedding,pos_int_pred)
 
-        pos_to_chunk_embed = tf.nn.embedding_lookup(pos_embedding,pos_int_pred)
-
-        chunk_logits, chunk_states = __chunk_private(encoding, pos_to_chunk_embed, config)
-        chunk_loss, chunk_accuracy, chunk_int_pred, chunk_int_targ = __loss(chunk_logits, self.chunk_targets)
+        chunk_logits, chunk_states = _chunk_private(encoding, pos_to_chunk_embed, config)
+        chunk_loss, chunk_accuracy, chunk_int_pred, chunk_int_targ = _loss(chunk_logits, self.chunk_targets)
         self.chunk_loss = chunk_loss
-        # self.chunk_last_state = chunk_states[0]
+
         self.chunk_int_pred = chunk_int_pred
         self.chunk_int_targ = chunk_int_targ
         self.joint_loss = chunk_loss + pos_loss
@@ -229,6 +229,6 @@ class Shared_Model(object):
         if not is_training:
             return
 
-        self.pos_op = __training(pos_loss, config, self)
-        self.chunk_op = __training(chunk_loss, config, self)
-        self.joint_op = __training(chunk_loss + pos_loss, config, self)
+        self.pos_op = _training(pos_loss, config, self)
+        self.chunk_op = _training(chunk_loss, config, self)
+        self.joint_op = _training(chunk_loss + pos_loss, config, self)
