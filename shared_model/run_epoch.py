@@ -66,7 +66,7 @@ def run_epoch(session, m, words, pos, chunk, pos_vocab_size, chunk_vocab_size,
         chunk_total_loss += chunk_loss
         pos_total_loss += pos_loss
         iters += 1
-        if verbose and step % (epoch_size // 10) == 0:
+        if verbose and step % 5 == 0:
             if model_type == 'POS':
                 costs = pos_total_loss
                 cost = pos_loss

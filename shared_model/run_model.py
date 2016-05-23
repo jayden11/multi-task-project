@@ -19,18 +19,18 @@ class Config(object):
     init_scale = 0.1 # initialisation scale
     learning_rate = 0.001 # learning_rate (if you are using SGD)
     max_grad_norm = 5 # for gradient clipping
-    num_steps = 20 # length of sequence
-    word_embedding_size = 200 # size of the embedding
+    num_steps = 128 # length of sequence
+    word_embedding_size = 400 # size of the embedding
     encoder_size = 200 # first layer
     pos_decoder_size = 200 # second layer
     chunk_decoder_size = 200 # second layer
     max_epoch = 1 # maximum number of epochs
     keep_prob = 0.5 # for dropout
-    batch_size = 64 # number of sequence
+    batch_size = 32 # number of sequence
     vocab_size = 20000 # this isn't used - need to look at this
     num_pos_tags = 45 # hard coded, should it be?
     num_chunk_tags = 23 # as above
-    pos_embedding_size = 200
+    pos_embedding_size = 400
     num_shared_layers = 1
 
 def main(model_type, dataset_path):
@@ -120,7 +120,7 @@ def main(model_type, dataset_path):
             pos_acc = np.sum(posp_t == post_t)/float(len(posp_t))
             chunk_acc = np.sum(chunkp_t == chunkt_t)/float(len(chunkp_t))
 
-            # write to file
+            # add to array
             train_pos_stats = np.append(train_pos_stats, pos_acc)
             train_chunk_stats = np.append(train_chunk_stats, chunk_acc)
 
