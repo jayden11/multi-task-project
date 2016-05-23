@@ -13,6 +13,7 @@ from run_epoch import run_epoch
 import argparse
 
 
+
 class Config(object):
     """Configuration for the network"""
     init_scale = 0.1 # initialisation scale
@@ -23,14 +24,14 @@ class Config(object):
     encoder_size = 200 # first layer
     pos_decoder_size = 200 # second layer
     chunk_decoder_size = 200 # second layer
-    max_epoch = 100 # maximum number of epochs
+    max_epoch = 1 # maximum number of epochs
     keep_prob = 0.5 # for dropout
     batch_size = 64 # number of sequence
     vocab_size = 20000 # this isn't used - need to look at this
     num_pos_tags = 45 # hard coded, should it be?
     num_chunk_tags = 23 # as above
     pos_embedding_size = 200
-    num_shared_layers = 4
+    num_shared_layers = 1
 
 def main(model_type, dataset_path):
     """Main."""
@@ -205,22 +206,21 @@ def main(model_type, dataset_path):
         chunkp_test = reader._res_to_list(chunkp_test, config.batch_size, config.num_steps,
                                           chunk_to_id, len(words_test))
 
-        print('saving')
-        train_custom = np.loadtxt(raw_data_path + '/train.txt', delimiter= ' ',dtype="object")
-        valid_custom = np.loadtxt(raw_data_path + '/validation.txt', delimiter= ' ',dtype="object")
-        combined = np.loadtxt(raw_data_path + '/train_val_combined.txt', delimiter= ' ',dtype="object")
-        test_data = np.loadtxt(raw_data_path + '/test.txt', delimiter= ' ',dtype="object")
+        train_custom = reader.read_tokens(raw_data_path + '/train.txt', 0)
+        valid_custom = reader.read_tokens(raw_data_path + '/validation.txt', 0)
+        combined = reader.read_tokens(raw_data_path + '/train_val_combined.txt', 0)
+        test_data = reader.read_tokens(raw_data_path + '/test.txt', 0)
 
         print('loaded text')
 
-        chunk_pred_train = np.concatenate((train_custom, chunkp_t), axis=1)
-        chunk_pred_val = np.concatenate((valid_custom, chunkp_v), axis=1)
-        chunk_pred_c = np.concatenate((combined, chunkp_c), axis=1)
-        chunk_pred_test = np.concatenate((test_data, chunkp_test), axis=1)
-        pos_pred_train = np.concatenate((train_custom, posp_t), axis=1)
-        pos_pred_val = np.concatenate((valid_custom, posp_v), axis=1)
-        pos_pred_c = np.concatenate((combined, posp_c), axis=1)
-        pos_pred_test = np.concatenate((test_data, posp_test), axis=1)
+        chunk_pred_train = np.concatenate((np.transpose(train_custom), chunkp_t), axis=1)
+        chunk_pred_val = np.concatenate((np.transpose(valid_custom), chunkp_v), axis=1)
+        chunk_pred_c = np.concatenate((np.transpose(combined), chunkp_c), axis=1)
+        chunk_pred_test = np.concatenate((np.transpose(test_data), chunkp_test), axis=1)
+        pos_pred_train = np.concatenate((np.transpose(train_custom), posp_t), axis=1)
+        pos_pred_val = np.concatenate((np.transpose(valid_custom), posp_v), axis=1)
+        pos_pred_c = np.concatenate((np.transpose(combined), posp_c), axis=1)
+        pos_pred_test = np.concatenate((np.transpose(test_data), posp_test), axis=1)
 
         print('finished concatenating, about to start saving')
 

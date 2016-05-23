@@ -9,6 +9,7 @@ import os
 import sys
 import time
 #import pandas as pd
+import csv
 import pdb
 
 import numpy as np
@@ -33,21 +34,26 @@ Section 2 will deal with creating the window and mini-batching
 """
 
 
-def _read_tokens(filename, padding_val, col_val):
+def read_tokens(filename, padding_val, col_val=-1):
     # Col Values
     # 0 - words
     # 1 - POS
     # 2 - tags
 
-    words = np.transpose(np.loadtxt(filename, dtype='object', delimiter=" "))[col_val]
+    with open(filename, 'rt', encoding='utf8') as csvfile:
+            r = csv.reader(csvfile, delimiter=' ')
+            words = np.transpose(np.array([x for x in list(r) if x != []])).astype(object)
     # padding token '0'
+    print(filename)
+    if col_val!=-1:
+        words = words[col_val]
     return np.pad(
         words, pad_width=(padding_val, 0), mode='constant', constant_values=0)
 
 
 def _build_vocab(filename, padding_width, col_val):
     # can be used for input vocab
-    data = _read_tokens(filename, padding_width, col_val)
+    data = read_tokens(filename, padding_width, col_val)
     counter = collections.Counter(data)
     # get rid of all words with frequency == 1
     counter = {k: v for k, v in counter.items() if v > 1}
@@ -60,7 +66,7 @@ def _build_vocab(filename, padding_width, col_val):
 
 def _build_tags(filename, padding_width, col_val):
     # can be used for classifications and input vocab
-    data = _read_tokens(filename, padding_width, col_val)
+    data = read_tokens(filename, padding_width, col_val)
     counter = collections.Counter(data)
     count_pairs = sorted(counter.items(), key=lambda x: -x[1])
     words, _ = list(zip(*count_pairs))
@@ -76,7 +82,7 @@ def _build_tags(filename, padding_width, col_val):
 
 def _file_to_word_ids(filename, word_to_id, padding_width):
     # assumes _build_vocab has been called first as is called word to id
-    data = _read_tokens(filename, padding_width, 0)
+    data = read_tokens(filename, padding_width, 0)
     default_value = word_to_id['<unk>']
     return [word_to_id.get(word, default_value) for word in data]
 
@@ -101,7 +107,7 @@ def _seq_tag(tag_integers, tag_vocab_size):
 
 def _file_to_tag_classifications(filename, tag_to_id, padding_width, col_val):
     # assumes _build_vocab has been called first and is called tag to id
-    data = _read_tokens(filename, padding_width, col_val)
+    data = read_tokens(filename, padding_width, col_val)
     return [tag_to_id[tag] for tag in data]
 
 
