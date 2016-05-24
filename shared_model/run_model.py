@@ -11,6 +11,7 @@ import pdb
 from graph import Shared_Model
 from run_epoch import run_epoch
 import argparse
+import saveload
 
 
 
@@ -20,18 +21,18 @@ class Config(object):
     learning_rate = 0.001 # learning_rate (if you are using SGD)
     max_grad_norm = 5 # for gradient clipping
     num_steps = 128 # length of sequence
-    word_embedding_size = 400 # size of the embedding
+    word_embedding_size = 500 # size of the embedding
     encoder_size = 200 # first layer
     pos_decoder_size = 200 # second layer
     chunk_decoder_size = 200 # second layer
-    max_epoch = 1 # maximum number of epochs
+    max_epoch = 100 # maximum number of epochs
     keep_prob = 0.5 # for dropout
-    batch_size = 32 # number of sequence
+    batch_size = 64 # number of sequence
     vocab_size = 20000 # this isn't used - need to look at this
     num_pos_tags = 45 # hard coded, should it be?
     num_chunk_tags = 23 # as above
-    pos_embedding_size = 400
-    num_shared_layers = 1
+    pos_embedding_size = 500
+    num_shared_layers = 2
 
 def main(model_type, dataset_path):
     """Main."""
@@ -156,7 +157,7 @@ def main(model_type, dataset_path):
             print("Pos Validation Accuracy After Epoch %d :  %3f" % (i+1, pos_acc))
             print("Chunk Validation Accuracy After Epoch %d : %3f" % (i+1, chunk_acc))
 
-            # write to file
+            # add to stats
             valid_pos_stats = np.append(valid_pos_stats, pos_acc)
             valid_chunk_stats = np.append(valid_chunk_stats, chunk_acc)
 
@@ -164,11 +165,11 @@ def main(model_type, dataset_path):
             if(valid_loss < best_epoch[1]):
                 best_epoch = [i+1, valid_loss]
 
+
         # Save loss & accuracy plots
         np.savetxt(dataset_path + '/current_outcome/loss/valid_loss_stats.txt', valid_loss_stats)
         np.savetxt(dataset_path + '/current_outcome/loss/valid_pos_loss_stats.txt', valid_pos_loss_stats)
         np.savetxt(dataset_path + '/current_outcome/loss/valid_chunk_loss_stats.txt', valid_chunk_loss_stats)
-
         np.savetxt(dataset_path + '/current_outcome/accuracy/valid_pos_stats.txt', valid_pos_stats)
         np.savetxt(dataset_path + '/current_outcome/accuracy/valid_chunk_stats.txt', valid_chunk_stats)
 
@@ -205,6 +206,9 @@ def main(model_type, dataset_path):
                                        config.num_steps, chunk_to_id, len(words_c))
         chunkp_test = reader._res_to_list(chunkp_test, config.batch_size, config.num_steps,
                                           chunk_to_id, len(words_test))
+
+        # save pickle
+        saveload.save(dataset_path + 'saved_variables.pkl', session)
 
         train_custom = reader.read_tokens(raw_data_path + '/train.txt', 0)
         valid_custom = reader.read_tokens(raw_data_path + '/validation.txt', 0)

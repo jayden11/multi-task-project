@@ -2,8 +2,9 @@ import pickle
 from tensorflow import Session
 import os
 import tensorflow as tf
+import pdb
 
-def main(save_path, sess):
+def save(save_path, sess):
 
     if not os.path.exists(save_path):
             with open(save_path, "wb") as file:
@@ -22,7 +23,7 @@ def load_np(save_path):
     if not os.path.exists(save_path):
         raise Exception("No saved weights at that location")
     else:
-        v_dict = pickle.load(open(save_path, "wb"))
+        v_dict = pickle.load(open(save_path, "rb"))
         for key in v_dict.keys():
             print("Key name: " + key)
 
