@@ -208,7 +208,7 @@ def main(model_type, dataset_path):
                                           chunk_to_id, len(words_test))
 
         # save pickle
-        saveload.save(dataset_path + 'saved_variables.pkl', session)
+        saveload.save(dataset_path + '/current_outcome/saved_variables.pkl', session)
 
         train_custom = reader.read_tokens(raw_data_path + '/train.txt', 0)
         valid_custom = reader.read_tokens(raw_data_path + '/validation.txt', 0)
