@@ -195,10 +195,10 @@ class Shared_Model(object):
             train_op = optimizer.apply_gradients(zip(grads, tvars))
             return train_op
 
-        with tf.device("/cpu:0"):
-            word_embedding = tf.get_variable("word_embedding", [vocab_size, word_embedding_size])
-            inputs = tf.nn.embedding_lookup(word_embedding, self.input_data)
-            pos_embedding = tf.get_variable("pos_embedding", [num_pos_tags, pos_embedding_size])
+
+        word_embedding = tf.get_variable("word_embedding", [vocab_size, word_embedding_size])
+        inputs = tf.nn.embedding_lookup(word_embedding, self.input_data)
+        pos_embedding = tf.get_variable("pos_embedding", [num_pos_tags, pos_embedding_size])
 
         if is_training and config.keep_prob < 1:
             inputs = tf.nn.dropout(inputs, config.keep_prob)
@@ -212,11 +212,12 @@ class Shared_Model(object):
         pos_logits, pos_states = _pos_private(encoding, config)
         pos_loss, pos_accuracy, pos_int_pred, pos_int_targ = _loss(pos_logits, self.pos_targets)
         self.pos_loss = pos_loss
-        # self.pos_last_state = pos_states[0]
+
         self.pos_int_pred = pos_int_pred
         self.pos_int_targ = pos_int_targ
-        with tf.device("/cpu:0"):
-            pos_to_chunk_embed = tf.nn.embedding_lookup(pos_embedding,pos_int_pred)
+
+        pos_to_chunk_embed = tf.nn.embedding_lookup(pos_embedding,pos_int_pred)
+
 
         chunk_logits, chunk_states = _chunk_private(encoding, pos_to_chunk_embed, config)
         chunk_loss, chunk_accuracy, chunk_int_pred, chunk_int_targ = _loss(chunk_logits, self.chunk_targets)
@@ -225,6 +226,9 @@ class Shared_Model(object):
         self.chunk_int_pred = chunk_int_pred
         self.chunk_int_targ = chunk_int_targ
         self.joint_loss = chunk_loss + pos_loss
+
+        # return pos embedding
+        self.pos_embedding = pos_embedding
 
         if not is_training:
             return

@@ -20,19 +20,19 @@ class Config(object):
     init_scale = 0.1 # initialisation scale
     learning_rate = 0.001 # learning_rate (if you are using SGD)
     max_grad_norm = 5 # for gradient clipping
-    num_steps = 128 # length of sequence
-    word_embedding_size = 500 # size of the embedding
+    num_steps = 20 # length of sequence
+    word_embedding_size = 400 # size of the embedding
     encoder_size = 200 # first layer
     pos_decoder_size = 200 # second layer
     chunk_decoder_size = 200 # second layer
-    max_epoch = 100 # maximum number of epochs
+    max_epoch = 50 # maximum number of epochs
     keep_prob = 0.5 # for dropout
     batch_size = 64 # number of sequence
     vocab_size = 20000 # this isn't used - need to look at this
     num_pos_tags = 45 # hard coded, should it be?
     num_chunk_tags = 23 # as above
-    pos_embedding_size = 500
-    num_shared_layers = 2
+    pos_embedding_size = 400
+    num_shared_layers = 1
 
 def main(model_type, dataset_path):
     """Main."""
@@ -207,7 +207,8 @@ def main(model_type, dataset_path):
         chunkp_test = reader._res_to_list(chunkp_test, config.batch_size, config.num_steps,
                                           chunk_to_id, len(words_test))
 
-        # save pickle
+        # save pickle - dataset_path + '/current_outcome/saved_variables.pkl'
+        print('saving variables (pickling)')
         saveload.save(dataset_path + '/current_outcome/saved_variables.pkl', session)
 
         train_custom = reader.read_tokens(raw_data_path + '/train.txt', 0)
