@@ -24,16 +24,16 @@ class Config(object):
     word_embedding_size = 400 # size of the embedding
     encoder_size = 200 # first layer
     pos_decoder_size = 200 # second layer
-    chunk_decoder_size = 200 # second layer
+    chunk_decoder_size = 400 # second layer
+    lm_decoder_size = 600 # second layer
     max_epoch = 50 # maximum number of epochs
     keep_prob = 0.5 # for dropout
     batch_size = 64 # number of sequence
-    vocab_size = 20000 # this isn't used - need to look at this
-    num_pos_tags = 45 # hard coded, should it be?
-    num_chunk_tags = 23 # as above
     pos_embedding_size = 400
     num_shared_layers = 1
     argmax = 0
+    chunk_embedding_size = 400
+    lm_decoder_size = 200
 
 def main(model_type, dataset_path):
     """Main."""
@@ -46,9 +46,9 @@ def main(model_type, dataset_path):
         chunk_to_id, words_test, pos_test, chunk_test, \
         words_c, pos_c, chunk_c = raw_data
 
-    config.num_pos_tags = len(pos_to_id)
-    config.num_chunk_tags = len(chunk_to_id)
-
+    num_pos_tags = len(pos_to_id)
+    num_chunk_tags = len(chunk_to_id)
+    vocab_size = len(word_to_id)
 
     with tf.Graph().as_default(), tf.Session() as session:
         initializer = tf.random_uniform_initializer(-config.init_scale,
@@ -56,15 +56,19 @@ def main(model_type, dataset_path):
 
         # model to train hyperparameters on
         with tf.variable_scope("hyp_model", reuse=None, initializer=initializer):
-            m = Shared_Model(is_training=True, config=config)
+            m = Shared_Model(is_training=True, config=config, num_pos_tags=num_pos_tags,
+            num_chunk_tags=num_chunk_tags, vocab_size=vocab_size)
         with tf.variable_scope("hyp_model", reuse=True, initializer=initializer):
-            mvalid = Shared_Model(is_training=False, config=config)
+            mvalid = Shared_Model(is_training=False, config=config, num_pos_tags=num_pos_tags,
+            num_chunk_tags=num_chunk_tags, vocab_size=vocab_size)
 
         # model that trains, given hyper-parameters
         with tf.variable_scope("final_model", reuse=None, initializer=initializer):
-            mTrain = Shared_Model(is_training=True, config=config)
+            mTrain = Shared_Model(is_training=True, config=config, num_pos_tags=num_pos_tags,
+            num_chunk_tags=num_chunk_tags, vocab_size=vocab_size)
         with tf.variable_scope("final_model", reuse=True, initializer=initializer):
-            mTest = Shared_Model(is_training=False, config=config)
+            mTest = Shared_Model(is_training=False, config=config, num_pos_tags=num_pos_tags,
+            num_chunk_tags=num_chunk_tags, vocab_size=vocab_size)
 
         tf.initialize_all_variables().run()
 
@@ -103,19 +107,22 @@ def main(model_type, dataset_path):
 
         for i in range(config.max_epoch):
             print("Epoch: %d" % (i + 1))
-            mean_loss, posp_t, chunkp_t, lmp_t, post_t, chunkt_t, lmt_t, pos_loss, chunk_loss = \
+            mean_loss, posp_t, chunkp_t, lmp_t, post_t, chunkt_t, lmt_t, pos_loss, chunk_loss, lm_loss = \
                 run_epoch(session, m,
                           words_t, pos_t, chunk_t,
-                          config.num_pos_tags, config.num_chunk_tags,
+                          num_pos_tags, num_chunk_tags, vocab_size,
                           verbose=True, model_type=model_type)
-
+            print('epoch finished')
+            print('added stats')
             # Save stats for charts
             train_loss_stats = np.append(train_loss_stats, mean_loss)
             train_pos_loss_stats = np.append(train_pos_loss_stats, pos_loss)
             train_chunk_loss_stats = np.append(train_chunk_loss_stats, chunk_loss)
             train_lm_loss_stats = np.append(train_lm_loss_stats, lm_loss)
 
+
             # get predictions as list
+            print('getting predictions')
             posp_t = reader._res_to_list(posp_t, config.batch_size, config.num_steps,
                                          pos_to_id, len(words_t))
             chunkp_t = reader._res_to_list(chunkp_t, config.batch_size,
@@ -131,9 +138,11 @@ def main(model_type, dataset_path):
                                             config.num_steps, word_to_id, len(words_t))
 
             # find the accuracy
+            print('finding accuracy')
             pos_acc = np.sum(posp_t == post_t)/float(len(posp_t))
             chunk_acc = np.sum(chunkp_t == chunkt_t)/float(len(chunkp_t))
             lm_acc = np.sum(lmp_t == lmt_t)/float(len(lmp_t))
+
 
             # add to array
             train_pos_stats = np.append(train_pos_stats, pos_acc)
@@ -144,9 +153,9 @@ def main(model_type, dataset_path):
             print("Pos Training Accuracy After Epoch %d :  %3f" % (i+1, pos_acc))
             print("Chunk Training Accuracy After Epoch %d : %3f" % (i+1, chunk_acc))
 
-            valid_loss, posp_v, chunkp_v, lmp_v post_v, chunkt_v, lmt_v pos_v_loss, chunk_v_loss, lm_v_loss = \
+            valid_loss, posp_v, chunkp_v, lmp_v, post_v, chunkt_v, lmt_v, pos_v_loss, chunk_v_loss, lm_v_loss = \
                 run_epoch(session, mvalid, words_v, pos_v, chunk_v,
-                          config.num_pos_tags, config.num_chunk_tags,
+                          num_pos_tags, num_chunk_tags, vocab_size,
                           verbose=True, valid=True, model_type=model_type)
 
             # Save loss for charts
@@ -214,26 +223,26 @@ def main(model_type, dataset_path):
             _, posp_c, chunkp_c, _, _, _, _, _, _ = \
                 run_epoch(session, mTrain,
                           words_c, pos_c, chunk_c,
-                          config.num_pos_tags, config.num_chunk_tags,
+                          num_pos_tags, num_chunk_tags, vocab_size,
                           verbose=True, model_type=model_type)
 
         print('Getting Testing Predictions')
         _, posp_test, chunkp_test, _, _, _, _, _, _ = \
             run_epoch(session, mTest,
                       words_test, pos_test, chunk_test,
-                      config.num_pos_tags, config.num_chunk_tags,
+                      num_pos_tags, num_chunk_tags, vocab_size,
                       verbose=True, valid=True, model_type=model_type)
 
         print('Writing Predictions')
         # prediction reshaping
         posp_c = reader._res_to_list(posp_c, config.batch_size, config.num_steps,
-                                     pos_to_id, len(words_c))
+                                     pos_to_id, len(words_c),to_str=True)
         posp_test = reader._res_to_list(posp_test, config.batch_size, config.num_steps,
-                                        pos_to_id, len(words_test))
+                                        pos_to_id, len(words_test),to_str=True)
         chunkp_c = reader._res_to_list(chunkp_c, config.batch_size,
-                                       config.num_steps, chunk_to_id, len(words_c))
+                                       config.num_steps, chunk_to_id, len(words_c),to_str=True)
         chunkp_test = reader._res_to_list(chunkp_test, config.batch_size, config.num_steps,
-                                          chunk_to_id, len(words_test))
+                                          chunk_to_id, len(words_test), to_str=True)
 
         # save pickle - dataset_path + '/current_outcome/saved_variables.pkl'
         print('saving variables (pickling)')

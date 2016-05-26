@@ -20,7 +20,7 @@ from graph import Shared_Model
 import saveload
 
 
-def run_epoch(session, m, words, pos, chunk, pos_vocab_size, chunk_vocab_size,
+def run_epoch(session, m, words, pos, chunk, pos_vocab_size, chunk_vocab_size, vocab_size,
               verbose=False, valid=False, model_type='JOINT'):
     """Runs the model on the given data."""
     epoch_size = ((len(words) // m.batch_size) - 1) // m.num_steps
@@ -28,6 +28,7 @@ def run_epoch(session, m, words, pos, chunk, pos_vocab_size, chunk_vocab_size,
     comb_loss = 0.0
     pos_total_loss = 0.0
     chunk_total_loss = 0.0
+    lm_total_loss = 0.0
     iters = 0
     accuracy = 0.0
     pos_predictions = []
@@ -38,8 +39,8 @@ def run_epoch(session, m, words, pos, chunk, pos_vocab_size, chunk_vocab_size,
     lm_true = []
     state = m.initial_state.eval()
 
-    for step, (x, y_pos, y_chunk) in enumerate(reader.create_batches(words, pos, chunk, m.batch_size,
-                                               m.num_steps, pos_vocab_size, chunk_vocab_size)):
+    for step, (x, y_pos, y_chunk, y_lm) in enumerate(reader.create_batches(words, pos, chunk, m.batch_size,
+                                               m.num_steps, pos_vocab_size, chunk_vocab_size, vocab_size)):
 
         if model_type == 'POS':
             if valid:
@@ -51,7 +52,7 @@ def run_epoch(session, m, words, pos, chunk, pos_vocab_size, chunk_vocab_size,
                 eval_op = tf.no_op()
             else:
                 eval_op = m.chunk_op
-        elif model_type == 'LM'
+        elif model_type == 'LM':
             if valid:
                 eval_op = tf.no_op()
             else:
@@ -62,11 +63,11 @@ def run_epoch(session, m, words, pos, chunk, pos_vocab_size, chunk_vocab_size,
             else:
                 eval_op = m.joint_op
 
-        joint_loss, _, pos_int_pred, chunk_int_pred, pos_int_true, \
-            chunk_int_true, pos_loss, chunk_loss, lm_loss = \
+        joint_loss, _, pos_int_pred, chunk_int_pred, lm_int_pred, pos_int_true, \
+            chunk_int_true, lm_int_true, pos_loss, chunk_loss, lm_loss = \
             session.run([m.joint_loss, eval_op, m.pos_int_pred,
-                         m.chunk_int_pred, m.pos_int_targ, m.chunk_int_targ,
-                         m.pos_loss, m.chunk_loss, lm_loss],
+                         m.chunk_int_pred, m.lm_int_pred, m.pos_int_targ, m.chunk_int_targ,
+                         m.lm_int_targ, m.pos_loss, m.chunk_loss, m.lm_loss],
                         {m.input_data: x,
                          m.pos_targets: y_pos,
                          m.chunk_targets: y_chunk,
@@ -104,6 +105,6 @@ def run_epoch(session, m, words, pos, chunk, pos_vocab_size, chunk_vocab_size,
         lm_predictions.append(lm_int_pred)
         lm_true.append(lm_int_true)
 
-    return (comb_loss / iters), pos_predictions, chunk_predictions, lm_predictions \
-        pos_true, chunk_true, lm_true (pos_total_loss / iters), \
+    return (comb_loss / iters), pos_predictions, chunk_predictions, lm_predictions, \
+        pos_true, chunk_true, lm_true, (pos_total_loss / iters), \
         (chunk_total_loss / iters), (lm_total_loss / iters)

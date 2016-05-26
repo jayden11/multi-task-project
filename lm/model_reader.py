@@ -184,7 +184,7 @@ Yields
 
 
 def create_batches(raw_words, raw_pos, raw_chunk, batch_size, num_steps, pos_vocab_size,
-                   chunk_vocab_size):
+                   chunk_vocab_size, vocab_size):
     """Create those minibatches."""
 
     def _reshape_and_pad(tokens, batch_size, num_steps):
@@ -209,6 +209,7 @@ def create_batches(raw_words, raw_pos, raw_chunk, batch_size, num_steps, pos_voc
     3. Do the epoch thing and iterate
     """
     data_len = len(raw_words)
+
     # how many times do you iterate to reach the end of the epoch
     epoch_size = (data_len // (batch_size*num_steps)) + 1
 
@@ -221,24 +222,33 @@ def create_batches(raw_words, raw_pos, raw_chunk, batch_size, num_steps, pos_voc
                           pos_vocab_size) for tag in range(batch_size))
         y_chunk = np.vstack(_seq_tag(chunk_data[tag, i*num_steps:(i+1)*num_steps],
                             chunk_vocab_size) for tag in range(batch_size))
+        y_lm = np.vstack(_seq_tag(word_data[tag, i*num_steps+1:(i+1)*num_steps+1],
+                            vocab_size) for tag in range(batch_size))
+
+        # append for last batch for lm
+        if i == epoch_size-1:
+            y_lm = np.vstack((y_lm,_seq_tag(np.zeros((batch_size,num_steps),dtype=np.int),vocab_size)))
         y_pos = y_pos.astype(np.int32)
         y_chunk = y_chunk.astype(np.int32)
-        yield (x, y_pos, y_chunk)
+        y_lm = y_lm.astype(np.int32)
+        yield (x, y_pos, y_chunk, y_lm)
 
 
 def _int_to_string(int_pred, d):
 
     # integers are the Values
     keys = []
+    pdb.set_trace()
     for x in int_pred:
         keys.append([k for k, v in d.items() if v == (x)])
 
     return keys
 
 
-def _res_to_list(res, batch_size, num_steps, to_id, w_length):
+def _res_to_list(res, batch_size, num_steps, to_id, w_length,to_str=False):
 
     tmp = np.concatenate([x.reshape(batch_size, num_steps)
                           for x in res], axis=1).reshape(-1)
-    tmp = np.squeeze(_int_to_string(tmp, to_id))
+    if to_str:
+        tmp = np.squeeze(_int_to_string(tmp, to_id))
     return tmp[range(num_steps-1, w_length)].reshape(-1,1)

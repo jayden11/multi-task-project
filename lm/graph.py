@@ -11,7 +11,8 @@ import pdb
 
 class Shared_Model(object):
 
-    def __init__(self, config, is_training):
+    def __init__(self, config, is_training, num_pos_tags, num_chunk_tags,
+        vocab_size):
         """Initialisation
             basically set the self-variables up, so that we can call them
             as variables to the model.
@@ -22,15 +23,16 @@ class Shared_Model(object):
         self.pos_decoder_size = pos_decoder_size = config.pos_decoder_size
         self.chunk_decoder_size = chunk_decoder_size = config.chunk_decoder_size
         self.batch_size = batch_size = config.batch_size
-        self.vocab_size = vocab_size = config.vocab_size
-        self.num_pos_tags = num_pos_tags = config.num_pos_tags
-        self.num_chunk_tags = num_chunk_tags = config.num_chunk_tags
+        self.vocab_size = vocab_size
+        self.num_pos_tags = num_pos_tags
+        self.num_chunk_tags = num_chunk_tags
         self.input_data = tf.placeholder(tf.int32, [batch_size, num_steps])
         self.word_embedding_size = word_embedding_size = config.word_embedding_size
         self.pos_embedding_size = pos_embedding_size = config.pos_embedding_size
         self.chunk_embedding_size = chunk_embedding_size = config.chunk_embedding_size
         self.num_shared_layers = num_shared_layers = config.num_shared_layers
         self.argmax = config.argmax
+        self.lm_decoder_size = config.lm_decoder_size
 
 
         # add input size - size of pos tags
@@ -103,8 +105,8 @@ class Shared_Model(object):
 
                 softmax_w = tf.get_variable("softmax_w",
                                             [config.pos_decoder_size,
-                                             config.num_pos_tags])
-                softmax_b = tf.get_variable("softmax_b", [config.num_pos_tags])
+                                             num_pos_tags])
+                softmax_b = tf.get_variable("softmax_b", [num_pos_tags])
                 logits = tf.matmul(output, softmax_w) + softmax_b
 
             return logits, decoder_states
@@ -150,8 +152,8 @@ class Shared_Model(object):
 
                 softmax_w = tf.get_variable("softmax_w",
                                             [config.chunk_decoder_size,
-                                             config.num_chunk_tags])
-                softmax_b = tf.get_variable("softmax_b", [config.num_chunk_tags])
+                                             num_chunk_tags])
+                softmax_b = tf.get_variable("softmax_b", [num_chunk_tags])
                 logits = tf.matmul(output, softmax_w) + softmax_b
 
             return logits, decoder_states
@@ -188,19 +190,19 @@ class Shared_Model(object):
                 # this function puts the 3d tensor into a 2d tensor: batch_size x input size
                 inputs = [tf.squeeze(input_, [1])
                           for input_ in tf.split(1, config.num_steps,
-                                                 chunk_inputs)]
+                                                 lm_inputs)]
 
                 decoder_outputs, decoder_states = rnn.rnn(cell,
                                                           inputs, initial_state=initial_state,
-                                                          scope="chunk_rnn")
+                                                          scope="lm_rnn")
 
                 output = tf.reshape(tf.concat(1, decoder_outputs),
                                     [-1, config.lm_decoder_size])
 
                 softmax_w = tf.get_variable("softmax_w",
                                             [config.lm_decoder_size,
-                                             config.num_chunk_tags])
-                softmax_b = tf.get_variable("softmax_b", [config.num_chunk_tags])
+                                             vocab_size])
+                softmax_b = tf.get_variable("softmax_b", [vocab_size])
                 logits = tf.matmul(output, softmax_w) + softmax_b
 
             return logits, decoder_states
@@ -253,8 +255,10 @@ class Shared_Model(object):
         word_embedding = tf.get_variable("word_embedding", [vocab_size, word_embedding_size])
         inputs = tf.nn.embedding_lookup(word_embedding, self.input_data)
 
-        self.pos_embedding = pos_embedding = tf.get_variable("pos_embedding", [num_pos_tags, pos_embedding_size])
-        self.chunk_embedding = chunk_embedding = tf.get_variable("chunk_embedding" [num_chunk_tags, chunk_embedding_size])
+        self.pos_embedding = pos_embedding = tf.get_variable("pos_embedding",
+            [num_pos_tags, pos_embedding_size])
+        self.chunk_embedding = chunk_embedding = tf.get_variable("chunk_embedding",
+            [num_chunk_tags, chunk_embedding_size])
 
         if is_training and config.keep_prob < 1:
             inputs = tf.nn.dropout(inputs, config.keep_prob)
@@ -291,8 +295,12 @@ class Shared_Model(object):
         else:
             chunk_to_lm_embed = tf.matmul(tf.nn.softmax(chunk_logits),chunk_embedding)
 
-        lm_logits, lm_states = _lm_private(encoding, pos_to_lm_embed, config)
+        lm_logits, lm_states = _lm_private(encoding, chunk_to_lm_embed,  pos_to_chunk_embed, config)
         lm_loss, lm_accuracy, lm_int_pred, lm_int_targ = _loss(lm_logits, self.lm_targets)
+
+        self.lm_loss = lm_loss
+        self.lm_int_pred = lm_int_pred
+        self.lm_int_targ = lm_int_targ
 
         self.joint_loss = (chunk_loss + pos_loss + lm_loss)/3
 
