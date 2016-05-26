@@ -45,7 +45,7 @@ def read_tokens(filename, padding_val, col_val=-1):
             r = csv.reader(csvfile, delimiter=' ')
             words = np.transpose(np.array([x for x in list(r) if x != []])).astype(object)
     # padding token '0'
-    print('reading ' + str(col_val) + ' ' + filename)
+    print(filename)
     if col_val!=-1:
         words = words[col_val]
     return np.pad(
@@ -72,9 +72,6 @@ def _build_tags(filename, padding_width, col_val):
     count_pairs = sorted(counter.items(), key=lambda x: -x[1])
     words, _ = list(zip(*count_pairs))
     tag_to_id = dict(zip(words, range(len(words))))
-    if col_val = 1:
-        pickle.dump(tag_to_id,open('pos_to_id.pkl','wb'))
-        pickl.dump(count_paris,open('pos_counts.pkl','wb'))
 
     return tag_to_id
 

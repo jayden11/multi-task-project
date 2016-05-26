@@ -80,9 +80,12 @@ def main(model_type, dataset_path):
         train_loss_stats = np.array([])
         train_pos_loss_stats = np.array([])
         train_chunk_loss_stats = np.array([])
+        train_lm_loss_stats = np.array([])
+
         # Create empty vectors for accuracy
         train_pos_stats = np.array([])
         train_chunk_stats = np.array([])
+        train_lm_stats = np.array([])
 
         # ====================================
         # Create vectors for validation results
@@ -91,13 +94,16 @@ def main(model_type, dataset_path):
         valid_loss_stats = np.array([])
         valid_pos_loss_stats = np.array([])
         valid_chunk_loss_stats = np.array([])
+        valid_lm_loss_stats = np.array([])
+
         # Create empty vectors for accuracy
         valid_pos_stats = np.array([])
         valid_chunk_stats = np.array([])
+        valid_lm_stats = np.array([])
 
         for i in range(config.max_epoch):
             print("Epoch: %d" % (i + 1))
-            mean_loss, posp_t, chunkp_t, post_t, chunkt_t, pos_loss, chunk_loss = \
+            mean_loss, posp_t, chunkp_t, lmp_t, post_t, chunkt_t, lmt_t, pos_loss, chunk_loss = \
                 run_epoch(session, m,
                           words_t, pos_t, chunk_t,
                           config.num_pos_tags, config.num_chunk_tags,
@@ -107,30 +113,38 @@ def main(model_type, dataset_path):
             train_loss_stats = np.append(train_loss_stats, mean_loss)
             train_pos_loss_stats = np.append(train_pos_loss_stats, pos_loss)
             train_chunk_loss_stats = np.append(train_chunk_loss_stats, chunk_loss)
+            train_lm_loss_stats = np.append(train_lm_loss_stats, lm_loss)
 
             # get predictions as list
             posp_t = reader._res_to_list(posp_t, config.batch_size, config.num_steps,
                                          pos_to_id, len(words_t))
             chunkp_t = reader._res_to_list(chunkp_t, config.batch_size,
                                            config.num_steps, chunk_to_id, len(words_t))
+            lmp_t = reader._res_to_list(lmp_t, config.batch_size,
+                                            config.num_steps, word_to_id, len(words_t))
+
             post_t = reader._res_to_list(post_t, config.batch_size, config.num_steps,
                                          pos_to_id, len(words_t))
             chunkt_t = reader._res_to_list(chunkt_t, config.batch_size,
                                            config.num_steps, chunk_to_id, len(words_t))
+            lmt_t = reader._res_to_list(lmt_t, config.batch_size,
+                                            config.num_steps, word_to_id, len(words_t))
 
             # find the accuracy
             pos_acc = np.sum(posp_t == post_t)/float(len(posp_t))
             chunk_acc = np.sum(chunkp_t == chunkt_t)/float(len(chunkp_t))
+            lm_acc = np.sum(lmp_t == lmt_t)/float(len(lmp_t))
 
             # add to array
             train_pos_stats = np.append(train_pos_stats, pos_acc)
             train_chunk_stats = np.append(train_chunk_stats, chunk_acc)
+            train_lm_stats = np.append(train_lm_stats, lm_acc)
 
             # print for tracking
             print("Pos Training Accuracy After Epoch %d :  %3f" % (i+1, pos_acc))
             print("Chunk Training Accuracy After Epoch %d : %3f" % (i+1, chunk_acc))
 
-            valid_loss, posp_v, chunkp_v, post_v, chunkt_v, pos_v_loss, chunk_v_loss = \
+            valid_loss, posp_v, chunkp_v, lmp_v post_v, chunkt_v, lmt_v pos_v_loss, chunk_v_loss, lm_v_loss = \
                 run_epoch(session, mvalid, words_v, pos_v, chunk_v,
                           config.num_pos_tags, config.num_chunk_tags,
                           verbose=True, valid=True, model_type=model_type)
@@ -139,6 +153,7 @@ def main(model_type, dataset_path):
             valid_loss_stats = np.append(valid_loss_stats, valid_loss)
             valid_pos_loss_stats = np.append(valid_pos_loss_stats, pos_v_loss)
             valid_chunk_loss_stats = np.append(valid_chunk_loss_stats, chunk_v_loss)
+            valid_lm_loss_stats = np.append(valid_lm_loss_stats, lm_v_loss)
 
             # get predictions as list
 
@@ -146,21 +161,29 @@ def main(model_type, dataset_path):
                                          pos_to_id, len(words_v))
             chunkp_v = reader._res_to_list(chunkp_v, config.batch_size,
                                            config.num_steps, chunk_to_id, len(words_v))
+            lmp_v = reader._res_to_list(lmp_v, config.batch_size,
+                                           config.num_steps, word_to_id, len(words_v))
             chunkt_v = reader._res_to_list(chunkt_v, config.batch_size,
                                            config.num_steps, chunk_to_id, len(words_v))
             post_v = reader._res_to_list(post_v, config.batch_size, config.num_steps,
                                          pos_to_id, len(words_v))
+            lmt_v = reader._res_to_list(lmt_v, config.batch_size,
+                                           config.num_steps, word_to_id, len(words_v))
+
 
             # find accuracy
             pos_acc = np.sum(posp_v == post_v)/float(len(posp_v))
             chunk_acc = np.sum(chunkp_v == chunkt_v)/float(len(chunkp_v))
+            lm_acc = np.sum(lmp_v == lmt_v)/float(len(lmp_v))
 
             print("Pos Validation Accuracy After Epoch %d :  %3f" % (i+1, pos_acc))
+            print("Chunk Validation Accuracy After Epoch %d : %3f" % (i+1, chunk_acc))
             print("Chunk Validation Accuracy After Epoch %d : %3f" % (i+1, chunk_acc))
 
             # add to stats
             valid_pos_stats = np.append(valid_pos_stats, pos_acc)
             valid_chunk_stats = np.append(valid_chunk_stats, chunk_acc)
+            valid_lm_stats = np.append(valid_lm_stats, lm_acc)
 
             # update best parameters
             if(valid_loss < best_epoch[1]):
@@ -171,27 +194,31 @@ def main(model_type, dataset_path):
         np.savetxt(dataset_path + '/current_outcome/loss/valid_loss_stats.txt', valid_loss_stats)
         np.savetxt(dataset_path + '/current_outcome/loss/valid_pos_loss_stats.txt', valid_pos_loss_stats)
         np.savetxt(dataset_path + '/current_outcome/loss/valid_chunk_loss_stats.txt', valid_chunk_loss_stats)
+        np.savetxt(dataset_path + '/current_outcome/loss/valid_lm_loss_stats.txt', valid_lm_loss_stats)
         np.savetxt(dataset_path + '/current_outcome/accuracy/valid_pos_stats.txt', valid_pos_stats)
         np.savetxt(dataset_path + '/current_outcome/accuracy/valid_chunk_stats.txt', valid_chunk_stats)
+        np.savetxt(dataset_path + '/current_outcome/accuracy/valid_lm_stats.txt', valid_chunk_stats)
 
         np.savetxt(dataset_path + '/current_outcome/loss/train_loss_stats.txt', train_loss_stats)
         np.savetxt(dataset_path + '/current_outcome/loss/train_pos_loss_stats.txt', train_pos_loss_stats)
         np.savetxt(dataset_path + '/current_outcome/loss/train_chunk_loss_stats.txt', train_chunk_loss_stats)
+        np.savetxt(dataset_path + '/current_outcome/loss/train_lm_loss_stats.txt', train_lm_loss_stats)
         np.savetxt(dataset_path + '/current_outcome/accuracy/train_pos_stats.txt', train_pos_stats)
         np.savetxt(dataset_path + '/current_outcome/accuracy/train_chunk_stats.txt', train_chunk_stats)
+        np.savetxt(dataset_path + '/current_outcome/accuracy/train_lm_stats.txt', train_lm_stats)
 
         # Train given epoch parameter
         print('Train Given Best Epoch Parameter :' + str(best_epoch[0]))
         for i in range(best_epoch[0]):
             print("Epoch: %d" % (i + 1))
-            _, posp_c, chunkp_c, _, _, _, _ = \
+            _, posp_c, chunkp_c, _, _, _, _, _, _ = \
                 run_epoch(session, mTrain,
                           words_c, pos_c, chunk_c,
                           config.num_pos_tags, config.num_chunk_tags,
                           verbose=True, model_type=model_type)
 
         print('Getting Testing Predictions')
-        _, posp_test, chunkp_test, _, _, _, _ = \
+        _, posp_test, chunkp_test, _, _, _, _, _, _ = \
             run_epoch(session, mTest,
                       words_test, pos_test, chunk_test,
                       config.num_pos_tags, config.num_chunk_tags,

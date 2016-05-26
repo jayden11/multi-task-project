@@ -28,14 +28,18 @@ class Shared_Model(object):
         self.input_data = tf.placeholder(tf.int32, [batch_size, num_steps])
         self.word_embedding_size = word_embedding_size = config.word_embedding_size
         self.pos_embedding_size = pos_embedding_size = config.pos_embedding_size
+        self.chunk_embedding_size = chunk_embedding_size = config.chunk_embedding_size
         self.num_shared_layers = num_shared_layers = config.num_shared_layers
         self.argmax = config.argmax
+
 
         # add input size - size of pos tags
         self.pos_targets = tf.placeholder(tf.float32, [(batch_size*num_steps),
                                           num_pos_tags])
         self.chunk_targets = tf.placeholder(tf.float32, [(batch_size*num_steps),
                                             num_chunk_tags])
+        self.lm_targets = tf.placeholder(tf.float32, [(batch_size*num_steps),
+                                            vocab_size])
 
         def _shared_layer(input_data, config):
             """Build the model to decoding
@@ -152,6 +156,55 @@ class Shared_Model(object):
 
             return logits, decoder_states
 
+        def _lm_private(encoder_units, pos_prediction, chunk_prediction, config):
+            """Decode model for lm
+
+            Args:
+                encoder_units - these are the encoder units:
+                [batch_size X encoder_size] with the one the pos prediction
+                pos_prediction:
+                must be the same size as the encoder_size
+
+            returns:
+                logits
+            """
+            # concatenate the encoder_units and the pos_prediction
+
+            pos_prediction = tf.reshape(pos_prediction,
+                [batch_size, num_steps, pos_embedding_size])
+            chunk_prediction = tf.reshape(chunk_prediction,
+                [batch_size, num_steps, chunk_embedding_size])
+            lm_inputs = tf.concat(2, [chunk_prediction, pos_prediction, encoder_units])
+
+            with tf.variable_scope("lm_decoder"):
+                cell = rnn_cell.BasicLSTMCell(config.lm_decoder_size, forget_bias=1.0)
+
+                if is_training and config.keep_prob < 1:
+                    cell = rnn_cell.DropoutWrapper(
+                        cell, output_keep_prob=config.keep_prob)
+
+                initial_state = cell.zero_state(config.batch_size, tf.float32)
+
+                # this function puts the 3d tensor into a 2d tensor: batch_size x input size
+                inputs = [tf.squeeze(input_, [1])
+                          for input_ in tf.split(1, config.num_steps,
+                                                 chunk_inputs)]
+
+                decoder_outputs, decoder_states = rnn.rnn(cell,
+                                                          inputs, initial_state=initial_state,
+                                                          scope="chunk_rnn")
+
+                output = tf.reshape(tf.concat(1, decoder_outputs),
+                                    [-1, config.lm_decoder_size])
+
+                softmax_w = tf.get_variable("softmax_w",
+                                            [config.lm_decoder_size,
+                                             config.num_chunk_tags])
+                softmax_b = tf.get_variable("softmax_b", [config.num_chunk_tags])
+                logits = tf.matmul(output, softmax_w) + softmax_b
+
+            return logits, decoder_states
+
         def _loss(logits, labels):
             """Calculate loss for both pos and chunk
                 Args:
@@ -199,7 +252,9 @@ class Shared_Model(object):
 
         word_embedding = tf.get_variable("word_embedding", [vocab_size, word_embedding_size])
         inputs = tf.nn.embedding_lookup(word_embedding, self.input_data)
-        pos_embedding = tf.get_variable("pos_embedding", [num_pos_tags, pos_embedding_size])
+
+        self.pos_embedding = pos_embedding = tf.get_variable("pos_embedding", [num_pos_tags, pos_embedding_size])
+        self.chunk_embedding = chunk_embedding = tf.get_variable("chunk_embedding" [num_chunk_tags, chunk_embedding_size])
 
         if is_training and config.keep_prob < 1:
             inputs = tf.nn.dropout(inputs, config.keep_prob)
@@ -217,27 +272,34 @@ class Shared_Model(object):
         self.pos_int_pred = pos_int_pred
         self.pos_int_targ = pos_int_targ
 
-        # choose either argmax or dot product for pos
+        # choose either argmax or dot product for pos embedding
         if config.argmax==1:
             pos_to_chunk_embed = tf.nn.embedding_lookup(pos_embedding,pos_int_pred)
         else:
             pos_to_chunk_embed = tf.matmul(tf.nn.softmax(pos_logits),pos_embedding)
 
-
         chunk_logits, chunk_states = _chunk_private(encoding, pos_to_chunk_embed, config)
         chunk_loss, chunk_accuracy, chunk_int_pred, chunk_int_targ = _loss(chunk_logits, self.chunk_targets)
-        self.chunk_loss = chunk_loss
 
+        self.chunk_loss = chunk_loss
         self.chunk_int_pred = chunk_int_pred
         self.chunk_int_targ = chunk_int_targ
-        self.joint_loss = chunk_loss + pos_loss
 
-        # return pos embedding
-        self.pos_embedding = pos_embedding
+        # choose either argmax or dot product for chunk embedding
+        if config.argmax==1:
+            chunk_to_lm_embed = tf.nn.embedding_lookup(chunk_embedding,chunk_int_pred)
+        else:
+            chunk_to_lm_embed = tf.matmul(tf.nn.softmax(chunk_logits),chunk_embedding)
+
+        lm_logits, lm_states = _lm_private(encoding, pos_to_lm_embed, config)
+        lm_loss, lm_accuracy, lm_int_pred, lm_int_targ = _loss(lm_logits, self.lm_targets)
+
+        self.joint_loss = (chunk_loss + pos_loss + lm_loss)/3
 
         if not is_training:
             return
 
         self.pos_op = _training(pos_loss, config, self)
         self.chunk_op = _training(chunk_loss, config, self)
-        self.joint_op = _training(chunk_loss + pos_loss, config, self)
+        self.lm_op = _training(lm_loss, config, self)
+        self.joint_op = _training((chunk_loss + pos_loss + lm_loss)/3, config, self)
