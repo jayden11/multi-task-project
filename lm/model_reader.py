@@ -45,16 +45,18 @@ def read_tokens(filename, padding_val, col_val=-1):
             r = csv.reader(csvfile, delimiter=' ')
             words = np.transpose(np.array([x for x in list(r) if x != []])).astype(object)
     # padding token '0'
-    print(filename)
+    print('reading' + filename)
     if col_val!=-1:
         words = words[col_val]
     return np.pad(
         words, pad_width=(padding_val, 0), mode='constant', constant_values=0)
 
 
-def _build_vocab(filename, padding_width, col_val):
+def _build_vocab(filename, ptb_filename, padding_width, col_val):
     # can be used for input vocab
-    data = read_tokens(filename, padding_width, col_val)
+    conll_data = read_tokens(filename, padding_width, col_val)
+    ptb_data = read_tokens(ptb_filename, padding_width, col_val)
+    data = np.concatenate((conll_data, ptb_data))
     counter = collections.Counter(data)
     # get rid of all words with frequency == 1
     counter = {k: v for k, v in counter.items() if v > 1}
@@ -112,36 +114,34 @@ def _file_to_tag_classifications(filename, tag_to_id, padding_width, col_val):
     return [tag_to_id[tag] for tag in data]
 
 
-def raw_x_y_data(data_path, num_steps):
+def raw_x_y_data(data_path, num_steps, ptb_data_path):
     train = "train.txt"
     valid = "validation.txt"
     train_valid = "train_val_combined.txt"
     comb = "all_combined.txt"
     test = "test.txt"
+    ptb = 'train.txt'
 
     train_path = os.path.join(data_path, train)
     valid_path = os.path.join(data_path, valid)
     train_valid_path = os.path.join(data_path, train_valid)
     comb_path = os.path.join(data_path, comb)
     test_path = os.path.join(data_path, test)
-
-    # print('writing combined')
-    # test_data = pd.read_csv('/Users/jonathangodwin/project/data/test.txt', sep= ' ',header=None)
-    # train_data = pd.read_csv('/Users/jonathangodwin/project/data/train.txt', sep= ' ',header=None)
-    #
-    # comb = pd.concat([train_data,test_data])
-    # comb.to_csv('/Users/jonathangodwin/project/data/comb.txt', sep=' ', index=False, header=False)
+    ptb_path = os.path.join(ptb_data_path, ptb)
 
 
-    word_to_id = _build_vocab(train_path, num_steps-1, 0)
+    word_to_id = _build_vocab(comb_path, ptb_path, num_steps-1, 0)
     # use the full training set for building the target tags
     pos_to_id = _build_tags(comb_path, num_steps-1, 1)
-
     chunk_to_id = _build_tags(comb_path, num_steps-1, 2)
 
     word_data_t = _file_to_word_ids(train_path, word_to_id, num_steps-1)
     pos_data_t = _file_to_tag_classifications(train_path, pos_to_id, num_steps-1, 1)
     chunk_data_t = _file_to_tag_classifications(train_path, chunk_to_id, num_steps-1, 2)
+
+    ptb_word_data = _file_to_word_ids(ptb_path, word_to_id, num_steps-1)
+    ptb_pos_data = _file_to_tag_classifications(ptb_path, pos_to_id, num_steps-1, 1)
+    ptb_chunk_data = _file_to_tag_classifications(ptb_path, chunk_to_id, num_steps-1, 2)
 
     word_data_v = _file_to_word_ids(valid_path, word_to_id, num_steps-1)
     pos_data_v = _file_to_tag_classifications(valid_path, pos_to_id, num_steps-1, 1)
@@ -158,7 +158,7 @@ def raw_x_y_data(data_path, num_steps):
     return word_data_t, pos_data_t, chunk_data_t, word_data_v, \
         pos_data_v, chunk_data_v, word_to_id, pos_to_id, chunk_to_id, \
         word_data_test, pos_data_test, chunk_data_test, word_data_c, \
-        pos_data_c, chunk_data_c
+        pos_data_c, chunk_data_c, ptb_word_data, ptb_pos_data, ptb_chunk_data
 
 
 """
@@ -238,7 +238,6 @@ def _int_to_string(int_pred, d):
 
     # integers are the Values
     keys = []
-    pdb.set_trace()
     for x in int_pred:
         keys.append([k for k, v in d.items() if v == (x)])
 

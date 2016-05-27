@@ -35,16 +35,18 @@ class Config(object):
     chunk_embedding_size = 400
     lm_decoder_size = 200
 
-def main(model_type, dataset_path):
+def main(model_type, dataset_path, ptb_path, save_path):
     """Main."""
     config = Config()
     raw_data_path = dataset_path + '/data'
     raw_data = reader.raw_x_y_data(
-        raw_data_path, config.num_steps)
+        raw_data_path, config.num_steps, ptb_path + '/data')
+
     words_t, pos_t, chunk_t, words_v, \
         pos_v, chunk_v, word_to_id, pos_to_id, \
         chunk_to_id, words_test, pos_test, chunk_test, \
-        words_c, pos_c, chunk_c = raw_data
+        words_c, pos_c, chunk_c, words_ptb, pos_ptb, chunk_ptb = raw_data
+
 
     num_pos_tags = len(pos_to_id)
     num_chunk_tags = len(chunk_to_id)
@@ -106,6 +108,15 @@ def main(model_type, dataset_path):
         valid_lm_stats = np.array([])
 
         for i in range(config.max_epoch):
+
+            print('Training on PTB - exciting!!')
+
+            mean_loss, posp_t, chunkp_t, lmp_t, post_t, chunkt_t, lmt_t, pos_loss, chunk_loss, lm_loss = \
+                run_epoch(session, m,
+                          words_ptb, pos_ptb, chunk_ptb,
+                          num_pos_tags, num_chunk_tags, vocab_size,
+                          verbose=True, model_type='LM')
+
             print("Epoch: %d" % (i + 1))
             mean_loss, posp_t, chunkp_t, lmp_t, post_t, chunkt_t, lmt_t, pos_loss, chunk_loss, lm_loss = \
                 run_epoch(session, m,
@@ -153,6 +164,9 @@ def main(model_type, dataset_path):
             print("Pos Training Accuracy After Epoch %d :  %3f" % (i+1, pos_acc))
             print("Chunk Training Accuracy After Epoch %d : %3f" % (i+1, chunk_acc))
 
+
+
+
             valid_loss, posp_v, chunkp_v, lmp_v, post_v, chunkt_v, lmt_v, pos_v_loss, chunk_v_loss, lm_v_loss = \
                 run_epoch(session, mvalid, words_v, pos_v, chunk_v,
                           num_pos_tags, num_chunk_tags, vocab_size,
@@ -187,7 +201,6 @@ def main(model_type, dataset_path):
 
             print("Pos Validation Accuracy After Epoch %d :  %3f" % (i+1, pos_acc))
             print("Chunk Validation Accuracy After Epoch %d : %3f" % (i+1, chunk_acc))
-            print("Chunk Validation Accuracy After Epoch %d : %3f" % (i+1, chunk_acc))
 
             # add to stats
             valid_pos_stats = np.append(valid_pos_stats, pos_acc)
@@ -200,21 +213,21 @@ def main(model_type, dataset_path):
 
 
         # Save loss & accuracy plots
-        np.savetxt(dataset_path + '/current_outcome/loss/valid_loss_stats.txt', valid_loss_stats)
-        np.savetxt(dataset_path + '/current_outcome/loss/valid_pos_loss_stats.txt', valid_pos_loss_stats)
-        np.savetxt(dataset_path + '/current_outcome/loss/valid_chunk_loss_stats.txt', valid_chunk_loss_stats)
-        np.savetxt(dataset_path + '/current_outcome/loss/valid_lm_loss_stats.txt', valid_lm_loss_stats)
-        np.savetxt(dataset_path + '/current_outcome/accuracy/valid_pos_stats.txt', valid_pos_stats)
-        np.savetxt(dataset_path + '/current_outcome/accuracy/valid_chunk_stats.txt', valid_chunk_stats)
-        np.savetxt(dataset_path + '/current_outcome/accuracy/valid_lm_stats.txt', valid_chunk_stats)
+        np.savetxt(save_path + '/loss/valid_loss_stats.txt', valid_loss_stats)
+        np.savetxt(save_path + '/loss/valid_pos_loss_stats.txt', valid_pos_loss_stats)
+        np.savetxt(save_path + '/loss/valid_chunk_loss_stats.txt', valid_chunk_loss_stats)
+        np.savetxt(save_path + '/loss/valid_lm_loss_stats.txt', valid_lm_loss_stats)
+        np.savetxt(save_path + '/accuracy/valid_pos_stats.txt', valid_pos_stats)
+        np.savetxt(save_path + '/accuracy/valid_chunk_stats.txt', valid_chunk_stats)
+        np.savetxt(save_path + '/accuracy/valid_lm_stats.txt', valid_chunk_stats)
 
-        np.savetxt(dataset_path + '/current_outcome/loss/train_loss_stats.txt', train_loss_stats)
-        np.savetxt(dataset_path + '/current_outcome/loss/train_pos_loss_stats.txt', train_pos_loss_stats)
-        np.savetxt(dataset_path + '/current_outcome/loss/train_chunk_loss_stats.txt', train_chunk_loss_stats)
-        np.savetxt(dataset_path + '/current_outcome/loss/train_lm_loss_stats.txt', train_lm_loss_stats)
-        np.savetxt(dataset_path + '/current_outcome/accuracy/train_pos_stats.txt', train_pos_stats)
-        np.savetxt(dataset_path + '/current_outcome/accuracy/train_chunk_stats.txt', train_chunk_stats)
-        np.savetxt(dataset_path + '/current_outcome/accuracy/train_lm_stats.txt', train_lm_stats)
+        np.savetxt(save_path + '/loss/train_loss_stats.txt', train_loss_stats)
+        np.savetxt(save_path + '/loss/train_pos_loss_stats.txt', train_pos_loss_stats)
+        np.savetxt(save_path + '/loss/train_chunk_loss_stats.txt', train_chunk_loss_stats)
+        np.savetxt(save_path + '/loss/train_lm_loss_stats.txt', train_lm_loss_stats)
+        np.savetxt(save_path + '/accuracy/train_pos_stats.txt', train_pos_stats)
+        np.savetxt(save_path + '/accuracy/train_chunk_stats.txt', train_chunk_stats)
+        np.savetxt(save_path + '/accuracy/train_lm_stats.txt', train_lm_stats)
 
         # Train given epoch parameter
         print('Train Given Best Epoch Parameter :' + str(best_epoch[0]))
@@ -244,9 +257,9 @@ def main(model_type, dataset_path):
         chunkp_test = reader._res_to_list(chunkp_test, config.batch_size, config.num_steps,
                                           chunk_to_id, len(words_test), to_str=True)
 
-        # save pickle - dataset_path + '/current_outcome/saved_variables.pkl'
+        # save pickle - save_path + '/saved_variables.pkl'
         print('saving variables (pickling)')
-        saveload.save(dataset_path + '/current_outcome/saved_variables.pkl', session)
+        saveload.save(save_path + '/saved_variables.pkl', session)
 
         train_custom = reader.read_tokens(raw_data_path + '/train.txt', 0)
         valid_custom = reader.read_tokens(raw_data_path + '/validation.txt', 0)
@@ -266,27 +279,27 @@ def main(model_type, dataset_path):
 
         print('finished concatenating, about to start saving')
 
-        np.savetxt(dataset_path + '/current_outcome/predictions/chunk_pred_train.txt',
+        np.savetxt(save_path + '/predictions/chunk_pred_train.txt',
                    chunk_pred_train, fmt='%s')
-        print('writing to ' + dataset_path + '/current_outcome/predictions/chunk_pred_train.txt')
-        np.savetxt(dataset_path + '/current_outcome/predictions/chunk_pred_val.txt',
+        print('writing to ' + save_path + '/predictions/chunk_pred_train.txt')
+        np.savetxt(save_path + '/predictions/chunk_pred_val.txt',
                    chunk_pred_val, fmt='%s')
-        print('writing to ' + dataset_path + '/current_outcome/predictions/chunk_pred_val.txt')
-        np.savetxt(dataset_path + '/current_outcome/predictions/chunk_pred_combined.txt',
+        print('writing to ' + save_path + '/predictions/chunk_pred_val.txt')
+        np.savetxt(save_path + '/predictions/chunk_pred_combined.txt',
                    chunk_pred_c, fmt='%s')
-        print('writing to ' + dataset_path + '/current_outcome/predictions/chunk_pred_val.txt')
-        np.savetxt(dataset_path + '/current_outcome/predictions/chunk_pred_test.txt',
+        print('writing to ' + save_path + '/predictions/chunk_pred_val.txt')
+        np.savetxt(save_path + '/predictions/chunk_pred_test.txt',
                    chunk_pred_test, fmt='%s')
-        print('writing to ' + dataset_path + '/current_outcome/predictions/chunk_pred_val.txt')
-        np.savetxt(dataset_path + '/current_outcome/predictions/pos_pred_train.txt',
+        print('writing to ' + save_path + '/predictions/chunk_pred_val.txt')
+        np.savetxt(save_path + '/predictions/pos_pred_train.txt',
                    pos_pred_train, fmt='%s')
-        print('writing to ' + dataset_path + '/current_outcome/predictions/chunk_pred_val.txt')
-        np.savetxt(dataset_path + '/current_outcome/predictions/pos_pred_val.txt',
+        print('writing to ' + save_path + '/predictions/chunk_pred_val.txt')
+        np.savetxt(save_path + '/predictions/pos_pred_val.txt',
                    pos_pred_val, fmt='%s')
-        print('writing to ' + dataset_path + '/current_outcome/predictions/chunk_pred_val.txt')
-        np.savetxt(dataset_path + '/current_outcome/predictions/pos_pred_combined.txt',
+        print('writing to ' + save_path + '/predictions/chunk_pred_val.txt')
+        np.savetxt(save_path + '/predictions/pos_pred_combined.txt',
                    pos_pred_c, fmt='%s')
-        np.savetxt(dataset_path + '/current_outcome/predictions/pos_pred_test.txt',
+        np.savetxt(save_path + '/predictions/pos_pred_test.txt',
                    pos_pred_test, fmt='%s')
 
 
@@ -294,9 +307,10 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--model_type")
     parser.add_argument("--dataset_path")
+    parser.add_argument("--ptb_path")
+    parser.add_argument("--save_path")
     args = parser.parse_args()
     if (str(args.model_type) != "POS") and (str(args.model_type) != "CHUNK"):
         args.model_type = 'JOINT'
     print('Model Selected : ' + str(args.model_type))
-    main(str(args.model_type),str(args.dataset_path))
-    #tf.app.run()
+    main(str(args.model_type),str(args.dataset_path),str(args.ptb_path),str(args.save_path))
