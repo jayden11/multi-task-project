@@ -297,6 +297,7 @@ class Shared_Model(object):
 
         lm_logits, lm_states = _lm_private(encoding, chunk_to_lm_embed,  pos_to_chunk_embed, config)
         lm_loss, lm_accuracy, lm_int_pred, lm_int_targ = _loss(lm_logits, self.lm_targets)
+        print(config.lm_decoder_size)
 
         self.lm_loss = lm_loss
         self.lm_int_pred = lm_int_pred

@@ -220,14 +220,14 @@ def main(model_type, dataset_path):
         print('Train Given Best Epoch Parameter :' + str(best_epoch[0]))
         for i in range(best_epoch[0]):
             print("Epoch: %d" % (i + 1))
-            _, posp_c, chunkp_c, _, _, _, _, _, _ = \
+            _, posp_c, chunkp_c, _, _, _, _, _, _, _ = \
                 run_epoch(session, mTrain,
                           words_c, pos_c, chunk_c,
                           num_pos_tags, num_chunk_tags, vocab_size,
                           verbose=True, model_type=model_type)
 
         print('Getting Testing Predictions')
-        _, posp_test, chunkp_test, _, _, _, _, _, _ = \
+        _, posp_test, chunkp_test, _, _, _, _, _, _, _ = \
             run_epoch(session, mTest,
                       words_test, pos_test, chunk_test,
                       num_pos_tags, num_chunk_tags, vocab_size,
