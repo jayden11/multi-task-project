@@ -184,7 +184,7 @@ Yields
 
 
 def create_batches(raw_words, raw_pos, raw_chunk, batch_size, num_steps, pos_vocab_size,
-                   chunk_vocab_size, vocab_size):
+                   chunk_vocab_size, vocab_size, continuing=False):
     """Create those minibatches."""
 
     def _reshape_and_pad(tokens, batch_size, num_steps):
@@ -212,26 +212,52 @@ def create_batches(raw_words, raw_pos, raw_chunk, batch_size, num_steps, pos_voc
 
     # how many times do you iterate to reach the end of the epoch
     epoch_size = (data_len // (batch_size*num_steps)) + 1
+    print(epoch_size)
 
     if epoch_size == 0:
         raise ValueError("epoch_size == 0, decrease batch_size or num_steps")
 
-    for i in range(epoch_size):
-        x = word_data[:, i*num_steps:(i+1)*num_steps]
-        y_pos = np.vstack(_seq_tag(pos_data[tag, i*num_steps:(i+1)*num_steps],
-                          pos_vocab_size) for tag in range(batch_size))
-        y_chunk = np.vstack(_seq_tag(chunk_data[tag, i*num_steps:(i+1)*num_steps],
-                            chunk_vocab_size) for tag in range(batch_size))
-        y_lm = np.vstack(_seq_tag(word_data[tag, i*num_steps+1:(i+1)*num_steps+1],
-                            vocab_size) for tag in range(batch_size))
+    if continuing == False:
+        for i in range(epoch_size):
+            x = word_data[:, i*num_steps:(i+1)*num_steps]
+            y_pos = np.vstack(_seq_tag(pos_data[tag, i*num_steps:(i+1)*num_steps],
+                              pos_vocab_size) for tag in range(batch_size))
+            y_chunk = np.vstack(_seq_tag(chunk_data[tag, i*num_steps:(i+1)*num_steps],
+                                chunk_vocab_size) for tag in range(batch_size))
+            y_lm = np.vstack(_seq_tag(word_data[tag, i*num_steps+1:(i+1)*num_steps+1],
+                                vocab_size) for tag in range(batch_size))
 
-        # append for last batch for lm
-        if i == epoch_size-1:
-            y_lm = np.vstack((y_lm,_seq_tag(np.zeros((batch_size,num_steps),dtype=np.int),vocab_size)))
-        y_pos = y_pos.astype(np.int32)
-        y_chunk = y_chunk.astype(np.int32)
-        y_lm = y_lm.astype(np.int32)
-        yield (x, y_pos, y_chunk, y_lm)
+            # append for last batch for lm
+            if i == epoch_size-1:
+                y_lm = np.vstack((y_lm,_seq_tag(np.zeros((batch_size,num_steps),dtype=np.int),vocab_size)))
+            y_pos = y_pos.astype(np.int32)
+            y_chunk = y_chunk.astype(np.int32)
+            y_lm = y_lm.astype(np.int32)
+            yield (x, y_pos, y_chunk, y_lm)
+    else:
+        i = 0
+        while i > -1:
+            print(i)
+            x = word_data[:, i*num_steps:(i+1)*num_steps]
+            y_pos = np.vstack(_seq_tag(pos_data[tag, i*num_steps:(i+1)*num_steps],
+                              pos_vocab_size) for tag in range(batch_size))
+            y_chunk = np.vstack(_seq_tag(chunk_data[tag, i*num_steps:(i+1)*num_steps],
+                                chunk_vocab_size) for tag in range(batch_size))
+            y_lm = np.vstack(_seq_tag(word_data[tag, i*num_steps+1:(i+1)*num_steps+1],
+                                vocab_size) for tag in range(batch_size))
+
+            # append for last batch for lm
+            if i == epoch_size-1:
+                y_lm = np.vstack((y_lm,_seq_tag(np.zeros((batch_size,num_steps),dtype=np.int),vocab_size)))
+            y_pos = y_pos.astype(np.int32)
+            y_chunk = y_chunk.astype(np.int32)
+            y_lm = y_lm.astype(np.int32)
+            i = (i+1) % (epoch_size - 1)
+            yield (x, y_pos, y_chunk, y_lm)
+
+
+
+
 
 
 def _int_to_string(int_pred, d):

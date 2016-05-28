@@ -12,7 +12,7 @@ from graph import Shared_Model
 from run_epoch import run_epoch
 import argparse
 import saveload
-
+import run_epoch_random
 
 
 class Config(object):
@@ -26,7 +26,7 @@ class Config(object):
     pos_decoder_size = 200 # second layer
     chunk_decoder_size = 400 # second layer
     lm_decoder_size = 600 # second layer
-    max_epoch = 50 # maximum number of epochs
+    max_epoch = 1 # maximum number of epochs
     keep_prob = 0.5 # for dropout
     batch_size = 64 # number of sequence
     pos_embedding_size = 400
@@ -34,6 +34,7 @@ class Config(object):
     argmax = 0
     chunk_embedding_size = 400
     lm_decoder_size = 200
+    random_mix = True
 
 def main(model_type, dataset_path, ptb_path, save_path):
     """Main."""
@@ -109,22 +110,30 @@ def main(model_type, dataset_path, ptb_path, save_path):
 
         for i in range(config.max_epoch):
 
-            print('Training on PTB - exciting!!')
-
-            mean_loss, posp_t, chunkp_t, lmp_t, post_t, chunkt_t, lmt_t, pos_loss, chunk_loss, lm_loss = \
-                run_epoch(session, m,
-                          words_ptb, pos_ptb, chunk_ptb,
-                          num_pos_tags, num_chunk_tags, vocab_size,
-                          verbose=True, model_type='LM')
-
             print("Epoch: %d" % (i + 1))
-            mean_loss, posp_t, chunkp_t, lmp_t, post_t, chunkt_t, lmt_t, pos_loss, chunk_loss, lm_loss = \
-                run_epoch(session, m,
-                          words_t, pos_t, chunk_t,
-                          num_pos_tags, num_chunk_tags, vocab_size,
-                          verbose=True, model_type=model_type)
+
+            if config.random_mix == False:
+                _, _, _, _, _, _, _, _, _, _ = \
+                    run_epoch(session, m,
+                              words_ptb, pos_ptb, chunk_ptb,
+                              num_pos_tags, num_chunk_tags, vocab_size,
+                              verbose=True, model_type='LM')
+
+
+                mean_loss, posp_t, chunkp_t, lmp_t, post_t, chunkt_t, lmt_t, pos_loss, chunk_loss, lm_loss = \
+                    run_epoch(session, m,
+                              words_t, pos_t, chunk_t,
+                              num_pos_tags, num_chunk_tags, vocab_size,
+                              verbose=True, model_type=model_type)
+
+            else:
+                    mean_loss, posp_t, chunkp_t, lmp_t, post_t, chunkt_t, lmt_t, pos_loss, chunk_loss, lm_loss = \
+                        run_epoch_random.run_epoch(session, m,
+                                  words_t, words_ptb, pos_t, pos_ptb, chunk_t, chunk_ptb,
+                                  num_pos_tags, num_chunk_tags, vocab_size,
+                                  verbose=True, model_type=model_type)
+
             print('epoch finished')
-            print('added stats')
             # Save stats for charts
             train_loss_stats = np.append(train_loss_stats, mean_loss)
             train_pos_loss_stats = np.append(train_pos_loss_stats, pos_loss)
