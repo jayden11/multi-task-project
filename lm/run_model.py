@@ -26,7 +26,7 @@ class Config(object):
     pos_decoder_size = 200 # second layer
     chunk_decoder_size = 400 # second layer
     lm_decoder_size = 600 # second layer
-    max_epoch = 50 # maximum number of epochs
+    max_epoch = 1 # maximum number of epochs
     keep_prob = 0.5 # for dropout
     batch_size = 64 # number of sequence
     pos_embedding_size = 400
@@ -175,9 +175,6 @@ def main(model_type, dataset_path, ptb_path, save_path):
             print("Pos Training Accuracy After Epoch %d :  %3f" % (i+1, pos_acc))
             print("Chunk Training Accuracy After Epoch %d : %3f" % (i+1, chunk_acc))
 
-
-
-
             valid_loss, posp_v, chunkp_v, lmp_v, post_v, chunkt_v, lmt_v, pos_v_loss, chunk_v_loss, lm_v_loss = \
                 run_epoch(session, mvalid, words_v, pos_v, chunk_v,
                           num_pos_tags, num_chunk_tags, vocab_size,
@@ -222,6 +219,7 @@ def main(model_type, dataset_path, ptb_path, save_path):
                 best_epoch = [i+1, valid_loss]
 
 
+        pdb.set_trace()
         # Save loss & accuracy plots
         np.savetxt(save_path + '/loss/valid_loss_stats.txt', valid_loss_stats)
         np.savetxt(save_path + '/loss/valid_pos_loss_stats.txt', valid_pos_loss_stats)
