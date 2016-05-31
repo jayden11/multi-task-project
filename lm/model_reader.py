@@ -212,7 +212,6 @@ def create_batches(raw_words, raw_pos, raw_chunk, batch_size, num_steps, pos_voc
 
     # how many times do you iterate to reach the end of the epoch
     epoch_size = (data_len // (batch_size*num_steps)) + 1
-    print(epoch_size)
 
     if epoch_size == 0:
         raise ValueError("epoch_size == 0, decrease batch_size or num_steps")
@@ -237,7 +236,6 @@ def create_batches(raw_words, raw_pos, raw_chunk, batch_size, num_steps, pos_voc
     else:
         i = 0
         while i > -1:
-            print(i)
             x = word_data[:, i*num_steps:(i+1)*num_steps]
             y_pos = np.vstack(_seq_tag(pos_data[tag, i*num_steps:(i+1)*num_steps],
                               pos_vocab_size) for tag in range(batch_size))

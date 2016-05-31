@@ -95,17 +95,18 @@ def run_epoch(session, m, conll_words, ptb_words, pos, ptb_pos, chunk, ptb_chunk
                 cost = joint_loss
             print("Type: %s,cost: %3f, total cost: %3f" % (model_type, cost, costs))
 
-        pos_int_pred = np.reshape(pos_int_pred, [m.batch_size, m.num_steps])
-        epoch_stats["pos_predictions"].append(pos_int_pred)
-        epoch_stats["pos_true"].append(pos_int_true)
+        if model_type != "LM":
+            pos_int_pred = np.reshape(pos_int_pred, [m.batch_size, m.num_steps])
+            epoch_stats["pos_predictions"].append(pos_int_pred)
+            epoch_stats["pos_true"].append(pos_int_true)
 
-        chunk_int_pred = np.reshape(chunk_int_pred, [m.batch_size, m.num_steps])
-        epoch_stats["chunk_predictions"].append(chunk_int_pred)
-        epoch_stats["chunk_true"].append(chunk_int_true)
+            chunk_int_pred = np.reshape(chunk_int_pred, [m.batch_size, m.num_steps])
+            epoch_stats["chunk_predictions"].append(chunk_int_pred)
+            epoch_stats["chunk_true"].append(chunk_int_true)
 
-        lm_int_pred = np.reshape(lm_int_pred, [m.batch_size, m.num_steps])
-        epoch_stats["lm_predictions"].append(lm_int_pred)
-        epoch_stats["lm_true"].append(lm_int_true)
+            lm_int_pred = np.reshape(lm_int_pred, [m.batch_size, m.num_steps])
+            epoch_stats["lm_predictions"].append(lm_int_pred)
+            epoch_stats["lm_true"].append(lm_int_true)
 
         return epoch_stats
 
