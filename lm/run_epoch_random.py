@@ -122,7 +122,7 @@ def run_epoch(session, m, conll_words, ptb_words, pos, ptb_pos, chunk, ptb_chunk
             train_batch(conll_batches, i, eval_op, "JOINT", epoch_stats)
     else:
         while ptb_iter <= ptb_epoch_size:
-            if random.random() < 0.5:
+            if random.random() < 0.3:
                 eval_op = m.joint_op
                 epoch_stats = train_batch(next(conll_batches), \
                     eval_op, "JOINT", epoch_stats)

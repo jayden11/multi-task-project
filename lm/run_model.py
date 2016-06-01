@@ -142,28 +142,11 @@ def main(model_type, dataset_path, ptb_path, save_path):
             train_chunk_loss_stats = np.append(train_chunk_loss_stats, chunk_loss)
             train_lm_loss_stats = np.append(train_lm_loss_stats, lm_loss)
 
-
-            # get predictions as list
-            print('getting predictions')
-            posp_t = reader._res_to_list(posp_t, config.batch_size, config.num_steps,
-                                         pos_to_id, len(words_t))
-            chunkp_t = reader._res_to_list(chunkp_t, config.batch_size,
-                                           config.num_steps, chunk_to_id, len(words_t))
-            lmp_t = reader._res_to_list(lmp_t, config.batch_size,
-                                            config.num_steps, word_to_id, len(words_t))
-
-            post_t = reader._res_to_list(post_t, config.batch_size, config.num_steps,
-                                         pos_to_id, len(words_t))
-            chunkt_t = reader._res_to_list(chunkt_t, config.batch_size,
-                                           config.num_steps, chunk_to_id, len(words_t))
-            lmt_t = reader._res_to_list(lmt_t, config.batch_size,
-                                            config.num_steps, word_to_id, len(words_t))
-
             # find the accuracy
             print('finding accuracy')
-            pos_acc = np.sum(posp_t == post_t)/float(len(posp_t))
-            chunk_acc = np.sum(chunkp_t == chunkt_t)/float(len(chunkp_t))
-            lm_acc = np.sum(lmp_t == lmt_t)/float(len(lmp_t))
+            pos_acc = np.sum(np.array(posp_t).flatten() == np.array(post_t).flatten())/float(len(np.array(posp_t).flatten()))
+            chunk_acc = np.sum(np.array(chunkp_t).flatten() == np.array(chunkt_t).flatten())/float(len(np.array(chunkp_t).flatten()))
+            lm_acc = np.sum(np.array(lmp_t).flatten() == np.array(lmt_t).flatten())/float(len(np.array(lmp_t).flatten()))
 
 
             # add to array
@@ -186,25 +169,10 @@ def main(model_type, dataset_path, ptb_path, save_path):
             valid_chunk_loss_stats = np.append(valid_chunk_loss_stats, chunk_v_loss)
             valid_lm_loss_stats = np.append(valid_lm_loss_stats, lm_v_loss)
 
-            # get predictions as list
-
-            posp_v = reader._res_to_list(posp_v, config.batch_size, config.num_steps,
-                                         pos_to_id, len(words_v))
-            chunkp_v = reader._res_to_list(chunkp_v, config.batch_size,
-                                           config.num_steps, chunk_to_id, len(words_v))
-            lmp_v = reader._res_to_list(lmp_v, config.batch_size,
-                                           config.num_steps, word_to_id, len(words_v))
-            chunkt_v = reader._res_to_list(chunkt_v, config.batch_size,
-                                           config.num_steps, chunk_to_id, len(words_v))
-            post_v = reader._res_to_list(post_v, config.batch_size, config.num_steps,
-                                         pos_to_id, len(words_v))
-            lmt_v = reader._res_to_list(lmt_v, config.batch_size,
-                                           config.num_steps, word_to_id, len(words_v))
-
             # find accuracy
-            pos_acc = np.sum(posp_v == post_v)/float(len(posp_v))
-            chunk_acc = np.sum(chunkp_v == chunkt_v)/float(len(chunkp_v))
-            lm_acc = np.sum(lmp_v == lmt_v)/float(len(lmp_v))
+            pos_acc = np.sum(np.array(posp_v).flatten() == np.array(post_v).flatten())/float(len(np.array(posp_v).flatten()))
+            chunk_acc = np.sum(np.array(chunkp_v).flatten() == np.array(chunkt_v).flatten())/float(len(np.array(chunkp_v).flatten()))
+            lm_acc = np.sum(np.array(lmp_v).flatten() == np.array(lmt_v).flatten())/float(len(np.array(lmp_v).flatten()))
 
             print("Pos Validation Accuracy After Epoch %d :  %3f" % (i+1, pos_acc))
             print("Chunk Validation Accuracy After Epoch %d : %3f" % (i+1, chunk_acc))
@@ -219,7 +187,34 @@ def main(model_type, dataset_path, ptb_path, save_path):
                 best_epoch = [i+1, valid_loss]
 
 
-        pdb.set_trace()
+        # get training predictions as list
+        posp_t = reader._res_to_list(posp_t, config.batch_size, config.num_steps,
+                                     pos_to_id, len(words_t), to_str=True)
+        chunkp_t = reader._res_to_list(chunkp_t, config.batch_size,
+                                       config.num_steps, chunk_to_id, len(words_t), to_str=True)
+        lmp_t = reader._res_to_list(lmp_t, config.batch_size,
+                                        config.num_steps, word_to_id, len(words_t), to_str=True)
+        post_t = reader._res_to_list(post_t, config.batch_size, config.num_steps,
+                                     pos_to_id, len(words_t), to_str=True)
+        chunkt_t = reader._res_to_list(chunkt_t, config.batch_size,
+                                       config.num_steps, chunk_to_id, len(words_t), to_str=True)
+        lmt_t = reader._res_to_list(lmt_t, config.batch_size,
+                                        config.num_steps, word_to_id, len(words_t), to_str=True)
+
+
+        # get predictions as list
+        posp_v = reader._res_to_list(posp_v, config.batch_size, config.num_steps,
+                                     pos_to_id, len(words_v), to_str=True)
+        chunkp_v = reader._res_to_list(chunkp_v, config.batch_size,
+                                       config.num_steps, chunk_to_id, len(words_v), to_str=True)
+        lmp_v = reader._res_to_list(lmp_v, config.batch_size,
+                                       config.num_steps, word_to_id, len(words_v), to_str=True)
+        chunkt_v = reader._res_to_list(chunkt_v, config.batch_size,
+                                       config.num_steps, chunk_to_id, len(words_v), to_str=True)
+        post_v = reader._res_to_list(post_v, config.batch_size, config.num_steps,
+                                     pos_to_id, len(words_v), to_str=True)
+        lmt_v = reader._res_to_list(lmt_v, config.batch_size,
+                                       config.num_steps, word_to_id, len(words_v), to_str=True)
         # Save loss & accuracy plots
         np.savetxt(save_path + '/loss/valid_loss_stats.txt', valid_loss_stats)
         np.savetxt(save_path + '/loss/valid_pos_loss_stats.txt', valid_pos_loss_stats)
@@ -275,7 +270,6 @@ def main(model_type, dataset_path, ptb_path, save_path):
         test_data = reader.read_tokens(raw_data_path + '/test.txt', 0)
 
         print('loaded text')
-
         chunk_pred_train = np.concatenate((np.transpose(train_custom), chunkp_t), axis=1)
         chunk_pred_val = np.concatenate((np.transpose(valid_custom), chunkp_v), axis=1)
         chunk_pred_c = np.concatenate((np.transpose(combined), chunkp_c), axis=1)

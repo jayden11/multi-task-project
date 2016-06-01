@@ -78,7 +78,7 @@ def run_epoch(session, m, words, pos, chunk, pos_vocab_size, chunk_vocab_size, v
         pos_total_loss += pos_loss
         lm_total_loss += lm_loss
         iters += 1
-        if verbose and step % 5 == 0:
+        if verbose and step % 10 == 0:
             if model_type == 'POS':
                 costs = pos_total_loss
                 cost = pos_loss
@@ -91,7 +91,7 @@ def run_epoch(session, m, words, pos, chunk, pos_vocab_size, chunk_vocab_size, v
             else:
                 costs = comb_loss
                 cost = joint_loss
-            print("Type: %s,cost: %3f, total cost: %3f" % (model_type, cost, costs))
+            print("Type: %s,cost: %3f, step: %3f" % (model_type, cost, step))
 
         pos_int_pred = np.reshape(pos_int_pred, [m.batch_size, m.num_steps])
         pos_predictions.append(pos_int_pred)

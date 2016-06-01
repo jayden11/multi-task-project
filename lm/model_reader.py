@@ -254,24 +254,11 @@ def create_batches(raw_words, raw_pos, raw_chunk, batch_size, num_steps, pos_voc
             yield (x, y_pos, y_chunk, y_lm)
 
 
-
-
-
-
-def _int_to_string(int_pred, d):
-
-    # integers are the Values
-    keys = []
-    for x in int_pred:
-        keys.append([k for k, v in d.items() if v == (x)])
-
-    return keys
-
-
-def _res_to_list(res, batch_size, num_steps, to_id, w_length,to_str=False):
+def _res_to_list(res, batch_size, num_steps, to_id, w_length, to_str=False):
 
     tmp = np.concatenate([x.reshape(batch_size, num_steps)
                           for x in res], axis=1).reshape(-1)
+    inv_dict = {v: k for k, v in to_id.items()}
     if to_str:
-        tmp = np.squeeze(_int_to_string(tmp, to_id))
-    return tmp[range(num_steps-1, w_length)].reshape(-1,1)
+        res = np.array([inv_dict[x] for x in tmp])
+    return res[range(num_steps-1, w_length)].reshape(-1,1)
