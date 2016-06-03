@@ -42,7 +42,6 @@ def run_epoch(session, m, conll_words, ptb_words, pos, ptb_pos, chunk, ptb_chunk
         "lm_predictions": [],
         "lm_true": []
     }
-    state = m.initial_state.eval()
 
     print('creating batches')
 
@@ -51,7 +50,7 @@ def run_epoch(session, m, conll_words, ptb_words, pos, ptb_pos, chunk, ptb_chunk
     conll_iter = 0
 
     ptb_batches = reader.create_batches(ptb_words, ptb_pos, ptb_chunk, m.batch_size,
-                            m.num_steps, pos_vocab_size, chunk_vocab_size, vocab_size)
+                            m.num_steps, pos_vocab_size, chunk_vocab_size, vocab_size, continuing=True)
     ptb_iter = 0
 
     # =======================================================
@@ -71,8 +70,7 @@ def run_epoch(session, m, conll_words, ptb_words, pos, ptb_pos, chunk, ptb_chunk
                         {m.input_data: x,
                          m.pos_targets: y_pos,
                          m.chunk_targets: y_chunk,
-                         m.lm_targets: y_lm,
-                         m.initial_state: state})
+                         m.lm_targets: y_lm})
 
         epoch_stats["comb_loss"] += joint_loss
         epoch_stats["chunk_total_loss"] += chunk_loss
@@ -93,7 +91,7 @@ def run_epoch(session, m, conll_words, ptb_words, pos, ptb_pos, chunk, ptb_chunk
             else:
                 costs = epoch_stats["comb_loss"]
                 cost = joint_loss
-            print("Type: %s,cost: %3f, total cost: %3f" % (model_type, cost, costs))
+            print("Type: %s,cost: %3f, step: %3f" % (model_type, cost, epoch_stats['iters']))
 
         if model_type != "LM":
             pos_int_pred = np.reshape(pos_int_pred, [m.batch_size, m.num_steps])
@@ -121,7 +119,7 @@ def run_epoch(session, m, conll_words, ptb_words, pos, ptb_pos, chunk, ptb_chunk
         for i in range(conll_epoch_size):
             train_batch(conll_batches, i, eval_op, "JOINT", epoch_stats)
     else:
-        while ptb_iter <= ptb_epoch_size:
+        while (ptb_iter <= ptb_epoch_size) or (conll_iter <= conll_epoch_size):
             if random.random() < 0.3:
                 eval_op = m.joint_op
                 epoch_stats = train_batch(next(conll_batches), \

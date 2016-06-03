@@ -16,30 +16,33 @@ import run_epoch_random
 
 
 class Config(object):
-    """Configuration for the network"""
-    init_scale = 0.1 # initialisation scale
-    learning_rate = 0.001 # learning_rate (if you are using SGD)
-    max_grad_norm = 5 # for gradient clipping
-    num_steps = 20 # length of sequence
-    word_embedding_size = 400 # size of the embedding
-    encoder_size = 200 # first layer
-    pos_decoder_size = 200 # second layer
-    chunk_decoder_size = 400 # second layer
-    lm_decoder_size = 600 # second layer
-    max_epoch = 1 # maximum number of epochs
-    keep_prob = 0.5 # for dropout
-    batch_size = 64 # number of sequence
-    pos_embedding_size = 400
-    num_shared_layers = 1
-    argmax = 0
-    chunk_embedding_size = 400
-    lm_decoder_size = 200
-    random_mix = False
-    ptb = False
+    def __init__(self,bidi):
+        """Configuration for the network"""
+        self.init_scale = 0.1 # initialisation scale
+        self.learning_rate = 0.001 # learning_rate (if you are using SGD)
+        self.max_grad_norm = 5 # for gradient clipping
+        self.num_steps = 20 # length of sequence
+        self.word_embedding_size = 400 # size of the embedding
+        self.encoder_size = 200 # first layer
+        self.pos_decoder_size = 200 # second layer
+        self.chunk_decoder_size = 200 # second layer
+        self.lm_decoder_size = 200 # second layer
+        self.max_epoch = 1 # maximum number of epochs
+        self.keep_prob = 0.5 # for dropout
+        self.batch_size = 64 # number of sequence
+        self.pos_embedding_size = 400
+        self.num_shared_layers = 1
+        self.argmax = 0
+        self.chunk_embedding_size = 400
+        self.lm_decoder_size = 200
+        self.random_mix =True
+        self.ptb = True
+        self.bidirectional = bidi
 
-def main(model_type, dataset_path, ptb_path, save_path):
+def main(model_type, dataset_path, ptb_path, save_path, bidirectional):
     """Main."""
-    config = Config()
+    config = Config(bidirectional)
+    print(config.bidirectional)
     raw_data_path = dataset_path + '/data'
     raw_data = reader.raw_x_y_data(
         raw_data_path, config.num_steps, ptb_path + '/data')
@@ -129,11 +132,11 @@ def main(model_type, dataset_path, ptb_path, save_path):
                               verbose=True, model_type=model_type)
 
             else:
-                    mean_loss, posp_t, chunkp_t, lmp_t, post_t, chunkt_t, lmt_t, pos_loss, chunk_loss, lm_loss = \
-                        run_epoch_random.run_epoch(session, m,
-                                  words_t, words_ptb, pos_t, pos_ptb, chunk_t, chunk_ptb,
-                                  num_pos_tags, num_chunk_tags, vocab_size,
-                                  verbose=True, model_type=model_type)
+                mean_loss, posp_t, chunkp_t, lmp_t, post_t, chunkt_t, lmt_t, pos_loss, chunk_loss, lm_loss = \
+                    run_epoch_random.run_epoch(session, m,
+                              words_t, words_ptb, pos_t, pos_ptb, chunk_t, chunk_ptb,
+                              num_pos_tags, num_chunk_tags, vocab_size,
+                              verbose=True, model_type=model_type)
 
             print('epoch finished')
             # Save stats for charts
@@ -233,12 +236,28 @@ def main(model_type, dataset_path, ptb_path, save_path):
         np.savetxt(save_path + '/accuracy/train_lm_stats.txt', train_lm_stats)
 
         # Train given epoch parameter
-        print('Train Given Best Epoch Parameter :' + str(best_epoch[0]))
-        for i in range(best_epoch[0]):
-            print("Epoch: %d" % (i + 1))
-            _, posp_c, chunkp_c, _, _, _, _, _, _, _ = \
-                run_epoch(session, mTrain,
-                          words_c, pos_c, chunk_c,
+        if config.random_mix == False:
+            if config.ptb == False:
+                print('Train Given Best Epoch Parameter :' + str(best_epoch[0]))
+                for i in range(best_epoch[0]):
+                    print("Epoch: %d" % (i + 1))
+
+                    _, _, _, _, _, _, _, _, _, _ = \
+                        run_epoch(session, mTrain,
+                                  words_ptb, pos_ptb, chunk_ptb,
+                                  num_pos_tags, num_chunk_tags, vocab_size,
+                                  verbose=True, model_type="LM")
+
+                    _, posp_c, chunkp_c, _, _, _, _, _, _, _ = \
+                        run_epoch(session, mTrain,
+                                  words_c, pos_c, chunk_c,
+                                  num_pos_tags, num_chunk_tags, vocab_size,
+                                  verbose=True, model_type=model_type)
+
+        else:
+            _, posp_t, chunkp_t, _, _, _, _, _, _, _ = \
+                run_epoch_random.run_epoch(session, mTrain,
+                          words_c, words_ptb, pos_c, pos_ptb, chunk_c, chunk_ptb,
                           num_pos_tags, num_chunk_tags, vocab_size,
                           verbose=True, model_type=model_type)
 
@@ -248,6 +267,7 @@ def main(model_type, dataset_path, ptb_path, save_path):
                       words_test, pos_test, chunk_test,
                       num_pos_tags, num_chunk_tags, vocab_size,
                       verbose=True, valid=True, model_type=model_type)
+
 
         print('Writing Predictions')
         # prediction reshaping
@@ -311,8 +331,10 @@ if __name__ == "__main__":
     parser.add_argument("--dataset_path")
     parser.add_argument("--ptb_path")
     parser.add_argument("--save_path")
+    parser.add_argument("--bidirectional")
     args = parser.parse_args()
     if (str(args.model_type) != "POS") and (str(args.model_type) != "CHUNK"):
         args.model_type = 'JOINT'
     print('Model Selected : ' + str(args.model_type))
-    main(str(args.model_type),str(args.dataset_path),str(args.ptb_path),str(args.save_path))
+    main(str(args.model_type),str(args.dataset_path), \
+         str(args.ptb_path),str(args.save_path), str(args.bidirectional))

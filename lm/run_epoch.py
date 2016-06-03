@@ -37,7 +37,6 @@ def run_epoch(session, m, words, pos, chunk, pos_vocab_size, chunk_vocab_size, v
     chunk_true = []
     lm_predictions = []
     lm_true = []
-    state = m.initial_state.eval()
 
     for step, (x, y_pos, y_chunk, y_lm) in enumerate(reader.create_batches(words, pos, chunk, m.batch_size,
                                                m.num_steps, pos_vocab_size, chunk_vocab_size, vocab_size)):
@@ -71,8 +70,7 @@ def run_epoch(session, m, words, pos, chunk, pos_vocab_size, chunk_vocab_size, v
                         {m.input_data: x,
                          m.pos_targets: y_pos,
                          m.chunk_targets: y_chunk,
-                         m.lm_targets: y_lm,
-                         m.initial_state: state})
+                         m.lm_targets: y_lm})
         comb_loss += joint_loss
         chunk_total_loss += chunk_loss
         pos_total_loss += pos_loss

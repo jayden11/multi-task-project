@@ -260,5 +260,5 @@ def _res_to_list(res, batch_size, num_steps, to_id, w_length, to_str=False):
                           for x in res], axis=1).reshape(-1)
     inv_dict = {v: k for k, v in to_id.items()}
     if to_str:
-        res = np.array([inv_dict[x] for x in tmp])
-    return res[range(num_steps-1, w_length)].reshape(-1,1)
+        result = np.array([inv_dict[x] for x in tmp])
+    return result[range(num_steps-1, w_length)].reshape(-1,1)

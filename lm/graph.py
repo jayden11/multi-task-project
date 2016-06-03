@@ -52,24 +52,52 @@ class Shared_Model(object):
             Returns:
                 output units
             """
-            cell = rnn_cell.BasicLSTMCell(config.encoder_size)
 
-            inputs = [tf.squeeze(input_, [1])
-                      for input_ in tf.split(1, config.num_steps, input_data)]
+            if config.bidirectional == True:
+                cell_fw = rnn_cell.BasicLSTMCell(config.encoder_size)
+                cell_bw = rnn_cell.BasicLSTMCell(config.encoder_size)
 
-            if is_training and config.keep_prob < 1:
-                cell = rnn_cell.DropoutWrapper(
-                    cell, output_keep_prob=config.keep_prob)
+                inputs = [tf.squeeze(input_, [1])
+                          for input_ in tf.split(1, config.num_steps, input_data)]
 
-            cell = rnn_cell.MultiRNNCell([cell] * config.num_shared_layers)
+                if is_training and config.keep_prob < 1:
+                    cell_fw = rnn_cell.DropoutWrapper(
+                        cell_fw, output_keep_prob=config.keep_prob)
+                    cell_bw = rnn_cell.DropoutWrapper(
+                        cell_bw, output_keep_prob=config.keep_prob)
 
-            initial_state = cell.zero_state(config.batch_size, tf.float32)
 
-            encoder_outputs, encoder_states = rnn.rnn(cell, inputs,
-                                                      initial_state=initial_state,
+                cell_fw = rnn_cell.MultiRNNCell([cell_fw] * config.num_shared_layers)
+                cell_bw = rnn_cell.MultiRNNCell([cell_bw] * config.num_shared_layers)
+
+                initial_state_fw = cell_fw.zero_state(config.batch_size, tf.float32)
+                initial_state_bw = cell_bw.zero_state(config.batch_size, tf.float32)
+
+                encoder_outputs, _, _ = rnn.bidirectional_rnn(cell_fw, cell_bw, inputs,
+                                                      initial_state_fw=initial_state_fw,
+                                                      initial_state_bw=initial_state_bw,
                                                       scope="encoder_rnn")
 
-            return encoder_outputs, initial_state
+
+            else:
+                cell = rnn_cell.BasicLSTMCell(config.encoder_size)
+
+                inputs = [tf.squeeze(input_, [1])
+                          for input_ in tf.split(1, config.num_steps, input_data)]
+
+                if is_training and config.keep_prob < 1:
+                    cell = rnn_cell.DropoutWrapper(
+                        cell, output_keep_prob=config.keep_prob)
+
+                cell = rnn_cell.MultiRNNCell([cell] * config.num_shared_layers)
+
+                initial_state = cell.zero_state(config.batch_size, tf.float32)
+
+                encoder_outputs, encoder_states = rnn.rnn(cell, inputs,
+                                                          initial_state=initial_state,
+                                                          scope="encoder_rnn")
+
+            return encoder_outputs
 
         def _pos_private(encoder_units, config):
             """Decode model for pos
@@ -82,34 +110,64 @@ class Shared_Model(object):
                 logits
             """
             with tf.variable_scope("pos_decoder"):
-                cell = rnn_cell.BasicLSTMCell(config.pos_decoder_size,
-                                              forget_bias=1.0)
+                if config.bidirectional == True:
+                    cell_fw = rnn_cell.BasicLSTMCell(config.pos_decoder_size,
+                                                  forget_bias=1.0)
+                    cell_bw = rnn_cell.BasicLSTMCell(config.pos_decoder_size,
+                                                  forget_bias=1.0)
 
-                if is_training and config.keep_prob < 1:
-                    cell = rnn_cell.DropoutWrapper(
-                        cell, output_keep_prob=config.keep_prob)
+                    if is_training and config.keep_prob < 1:
+                        cell_fw = rnn_cell.DropoutWrapper(
+                            cell_fw, output_keep_prob=config.keep_prob)
+                        cell_bw = rnn_cell.DropoutWrapper(
+                            cell_bw, output_keep_prob=config.keep_prob)
 
-                initial_state = cell.zero_state(config.batch_size, tf.float32)
+                    initial_state_fw = cell_fw.zero_state(config.batch_size, tf.float32)
+                    initial_state_bw = cell_bw.zero_state(config.batch_size, tf.float32)
 
-                # puts it into batch_size X input_size
-                inputs = [tf.squeeze(input_, [1])
-                          for input_ in tf.split(1, config.num_steps,
-                                                 encoder_units)]
+                    # puts it into batch_size X input_size
+                    inputs = [tf.squeeze(input_, [1])
+                              for input_ in tf.split(1, config.num_steps,
+                                                     encoder_units)]
 
-                decoder_outputs, decoder_states = rnn.rnn(cell, inputs,
-                                                          initial_state=initial_state,
-                                                          scope="pos_rnn")
+                    decoder_outputs, _, _ = rnn.bidirectional_rnn(cell_fw, cell_bw, inputs,
+                                                              initial_state_fw=initial_state_fw,
+                                                              initial_state_bw=initial_state_bw,
+                                                              scope="pos_rnn")
+                    output = tf.reshape(tf.concat(1, decoder_outputs),
+                                        [-1, 2*config.pos_decoder_size])
+                    softmax_w = tf.get_variable("softmax_w",
+                                                [2*config.pos_decoder_size,
+                                                 num_pos_tags])
+                else:
+                    cell = rnn_cell.BasicLSTMCell(config.pos_decoder_size,
+                                                  forget_bias=1.0)
 
-                output = tf.reshape(tf.concat(1, decoder_outputs),
-                                    [-1, config.pos_decoder_size])
+                    if is_training and config.keep_prob < 1:
+                        cell = rnn_cell.DropoutWrapper(
+                            cell, output_keep_prob=config.keep_prob)
 
-                softmax_w = tf.get_variable("softmax_w",
-                                            [config.pos_decoder_size,
-                                             num_pos_tags])
+                    initial_state = cell.zero_state(config.batch_size, tf.float32)
+
+                    # puts it into batch_size X input_size
+                    inputs = [tf.squeeze(input_, [1])
+                              for input_ in tf.split(1, config.num_steps,
+                                                     encoder_units)]
+
+                    decoder_outputs, decoder_states = rnn.rnn(cell, inputs,
+                                                              initial_state=initial_state,
+                                                              scope="pos_rnn")
+                    output = tf.reshape(tf.concat(1, decoder_outputs),
+                                        [-1, config.pos_decoder_size])
+
+                    softmax_w = tf.get_variable("softmax_w",
+                                                [config.pos_decoder_size,
+                                                 num_pos_tags])
+
                 softmax_b = tf.get_variable("softmax_b", [num_pos_tags])
                 logits = tf.matmul(output, softmax_w) + softmax_b
 
-            return logits, decoder_states
+            return logits
 
         def _chunk_private(encoder_units, pos_prediction, config):
             """Decode model for chunks
@@ -130,33 +188,62 @@ class Shared_Model(object):
             chunk_inputs = tf.concat(2, [pos_prediction, encoder_units])
 
             with tf.variable_scope("chunk_decoder"):
-                cell = rnn_cell.BasicLSTMCell(config.chunk_decoder_size, forget_bias=1.0)
+                if config.bidirectional == True:
+                    cell_fw = rnn_cell.BasicLSTMCell(config.chunk_decoder_size, forget_bias=1.0)
+                    cell_bw = rnn_cell.BasicLSTMCell(config.chunk_decoder_size, forget_bias=1.0)
 
-                if is_training and config.keep_prob < 1:
-                    cell = rnn_cell.DropoutWrapper(
-                        cell, output_keep_prob=config.keep_prob)
+                    if is_training and config.keep_prob < 1:
+                        cell_fw = rnn_cell.DropoutWrapper(
+                            cell_fw, output_keep_prob=config.keep_prob)
+                        cell_bw = rnn_cell.DropoutWrapper(
+                            cell_bw, output_keep_prob=config.keep_prob)
 
-                initial_state = cell.zero_state(config.batch_size, tf.float32)
+                    initial_state_fw = cell_fw.zero_state(config.batch_size, tf.float32)
+                    initial_state_bw = cell_bw.zero_state(config.batch_size, tf.float32)
 
-                # this function puts the 3d tensor into a 2d tensor: batch_size x input size
-                inputs = [tf.squeeze(input_, [1])
-                          for input_ in tf.split(1, config.num_steps,
-                                                 chunk_inputs)]
+                    # this function puts the 3d tensor into a 2d tensor: batch_size x input size
+                    inputs = [tf.squeeze(input_, [1])
+                              for input_ in tf.split(1, config.num_steps,
+                                                     chunk_inputs)]
 
-                decoder_outputs, decoder_states = rnn.rnn(cell,
-                                                          inputs, initial_state=initial_state,
-                                                          scope="chunk_rnn")
+                    decoder_outputs, _, _ = rnn.bidirectional_rnn(cell_fw, cell_bw,
+                                                              inputs, initial_state_fw=initial_state_fw,
+                                                              initial_state_bw=initial_state_bw,
+                                                              scope="chunk_rnn")
+                    output = tf.reshape(tf.concat(1, decoder_outputs),
+                                        [-1, 2*config.chunk_decoder_size])
+                    softmax_w = tf.get_variable("softmax_w",
+                                                [2*config.chunk_decoder_size,
+                                                 num_chunk_tags])
+                else:
+                    cell = rnn_cell.BasicLSTMCell(config.chunk_decoder_size, forget_bias=1.0)
 
-                output = tf.reshape(tf.concat(1, decoder_outputs),
-                                    [-1, config.chunk_decoder_size])
+                    if is_training and config.keep_prob < 1:
+                        cell = rnn_cell.DropoutWrapper(
+                            cell, output_keep_prob=config.keep_prob)
 
-                softmax_w = tf.get_variable("softmax_w",
-                                            [config.chunk_decoder_size,
-                                             num_chunk_tags])
+                    initial_state = cell.zero_state(config.batch_size, tf.float32)
+
+                    # this function puts the 3d tensor into a 2d tensor: batch_size x input size
+                    inputs = [tf.squeeze(input_, [1])
+                              for input_ in tf.split(1, config.num_steps,
+                                                     chunk_inputs)]
+
+                    decoder_outputs, decoder_states = rnn.rnn(cell,
+                                                              inputs, initial_state=initial_state,
+                                                              scope="chunk_rnn")
+
+                    output = tf.reshape(tf.concat(1, decoder_outputs),
+                                        [-1, config.chunk_decoder_size])
+
+                    softmax_w = tf.get_variable("softmax_w",
+                                                [config.chunk_decoder_size,
+                                                 num_chunk_tags])
+
                 softmax_b = tf.get_variable("softmax_b", [num_chunk_tags])
                 logits = tf.matmul(output, softmax_w) + softmax_b
 
-            return logits, decoder_states
+            return logits
 
         def _lm_private(encoder_units, pos_prediction, chunk_prediction, config):
             """Decode model for lm
@@ -179,33 +266,61 @@ class Shared_Model(object):
             lm_inputs = tf.concat(2, [chunk_prediction, pos_prediction, encoder_units])
 
             with tf.variable_scope("lm_decoder"):
-                cell = rnn_cell.BasicLSTMCell(config.lm_decoder_size, forget_bias=1.0)
+                if config.bidirectional == True:
+                    cell_fw = rnn_cell.BasicLSTMCell(config.lm_decoder_size, forget_bias=1.0)
+                    cell_bw = rnn_cell.BasicLSTMCell(config.lm_decoder_size, forget_bias=1.0)
 
-                if is_training and config.keep_prob < 1:
-                    cell = rnn_cell.DropoutWrapper(
-                        cell, output_keep_prob=config.keep_prob)
+                    if is_training and config.keep_prob < 1:
+                        cell_fw = rnn_cell.DropoutWrapper(
+                            cell_fw, output_keep_prob=config.keep_prob)
+                        cell_bw = rnn_cell.DropoutWrapper(
+                            cell_bw, output_keep_prob=config.keep_prob)
 
-                initial_state = cell.zero_state(config.batch_size, tf.float32)
+                    initial_state_fw = cell_fw.zero_state(config.batch_size, tf.float32)
+                    initial_state_bw = cell_bw.zero_state(config.batch_size, tf.float32)
 
-                # this function puts the 3d tensor into a 2d tensor: batch_size x input size
-                inputs = [tf.squeeze(input_, [1])
-                          for input_ in tf.split(1, config.num_steps,
-                                                 lm_inputs)]
+                    # this function puts the 3d tensor into a 2d tensor: batch_size x input size
+                    inputs = [tf.squeeze(input_, [1])
+                              for input_ in tf.split(1, config.num_steps,
+                                                     lm_inputs)]
 
-                decoder_outputs, decoder_states = rnn.rnn(cell,
-                                                          inputs, initial_state=initial_state,
-                                                          scope="lm_rnn")
+                    decoder_outputs, _, _ = rnn.bidirectional_rnn(cell_fw, cell_bw,
+                                                              inputs, initial_state_fw=initial_state_fw,
+                                                              initial_state_bw=initial_state_bw,
+                                                              scope="lm_rnn")
+                    output = tf.reshape(tf.concat(1, decoder_outputs),
+                                        [-1, 2*config.lm_decoder_size])
+                    softmax_w = tf.get_variable("softmax_w",
+                                                [2*config.lm_decoder_size,
+                                                 vocab_size])
+                else:
+                    cell = rnn_cell.BasicLSTMCell(config.lm_decoder_size, forget_bias=1.0)
 
-                output = tf.reshape(tf.concat(1, decoder_outputs),
-                                    [-1, config.lm_decoder_size])
+                    if is_training and config.keep_prob < 1:
+                        cell = rnn_cell.DropoutWrapper(
+                            cell, output_keep_prob=config.keep_prob)
 
-                softmax_w = tf.get_variable("softmax_w",
-                                            [config.lm_decoder_size,
-                                             vocab_size])
+                    initial_state = cell.zero_state(config.batch_size, tf.float32)
+
+                    # this function puts the 3d tensor into a 2d tensor: batch_size x input size
+                    inputs = [tf.squeeze(input_, [1])
+                              for input_ in tf.split(1, config.num_steps,
+                                                     lm_inputs)]
+
+                    decoder_outputs, decoder_states = rnn.rnn(cell,
+                                                              inputs, initial_state=initial_state,
+                                                              scope="lm_rnn")
+
+                    output = tf.reshape(tf.concat(1, decoder_outputs),
+                                        [-1, config.lm_decoder_size])
+                    softmax_w = tf.get_variable("softmax_w",
+                                                [config.lm_decoder_size,
+                                                 vocab_size])
+
                 softmax_b = tf.get_variable("softmax_b", [vocab_size])
                 logits = tf.matmul(output, softmax_w) + softmax_b
 
-            return logits, decoder_states
+            return logits
 
         def _loss(logits, labels):
             """Calculate loss for both pos and chunk
@@ -263,13 +378,12 @@ class Shared_Model(object):
         if is_training and config.keep_prob < 1:
             inputs = tf.nn.dropout(inputs, config.keep_prob)
 
-        encoding, intial_state = _shared_layer(inputs, config)
-        self.initial_state = intial_state
+        encoding = _shared_layer(inputs, config)
 
         encoding = tf.pack(encoding)
         encoding = tf.transpose(encoding, perm=[1, 0, 2])
 
-        pos_logits, pos_states = _pos_private(encoding, config)
+        pos_logits = _pos_private(encoding, config)
         pos_loss, pos_accuracy, pos_int_pred, pos_int_targ = _loss(pos_logits, self.pos_targets)
         self.pos_loss = pos_loss
 
@@ -282,7 +396,7 @@ class Shared_Model(object):
         else:
             pos_to_chunk_embed = tf.matmul(tf.nn.softmax(pos_logits),pos_embedding)
 
-        chunk_logits, chunk_states = _chunk_private(encoding, pos_to_chunk_embed, config)
+        chunk_logits = _chunk_private(encoding, pos_to_chunk_embed, config)
         chunk_loss, chunk_accuracy, chunk_int_pred, chunk_int_targ = _loss(chunk_logits, self.chunk_targets)
 
         self.chunk_loss = chunk_loss
@@ -295,7 +409,7 @@ class Shared_Model(object):
         else:
             chunk_to_lm_embed = tf.matmul(tf.nn.softmax(chunk_logits),chunk_embedding)
 
-        lm_logits, lm_states = _lm_private(encoding, chunk_to_lm_embed,  pos_to_chunk_embed, config)
+        lm_logits = _lm_private(encoding, chunk_to_lm_embed,  pos_to_chunk_embed, config)
         lm_loss, lm_accuracy, lm_int_pred, lm_int_targ = _loss(lm_logits, self.lm_targets)
 
         self.lm_loss = lm_loss
