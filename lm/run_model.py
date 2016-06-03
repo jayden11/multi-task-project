@@ -35,7 +35,7 @@ class Config(object):
         self.argmax = 0
         self.chunk_embedding_size = 400
         self.lm_decoder_size = 200
-        self.random_mix =True
+        self.random_mix = True
         self.ptb = True
         self.bidirectional = bidi
 
@@ -237,29 +237,32 @@ def main(model_type, dataset_path, ptb_path, save_path, bidirectional):
 
         # Train given epoch parameter
         if config.random_mix == False:
-            if config.ptb == False:
-                print('Train Given Best Epoch Parameter :' + str(best_epoch[0]))
-                for i in range(best_epoch[0]):
-                    print("Epoch: %d" % (i + 1))
-
+            print('Train Given Best Epoch Parameter :' + str(best_epoch[0]))
+            for i in range(best_epoch[0]):
+                print("Epoch: %d" % (i + 1))
+                if config.ptb == False:
                     _, _, _, _, _, _, _, _, _, _ = \
                         run_epoch(session, mTrain,
                                   words_ptb, pos_ptb, chunk_ptb,
                                   num_pos_tags, num_chunk_tags, vocab_size,
                                   verbose=True, model_type="LM")
 
-                    _, posp_c, chunkp_c, _, _, _, _, _, _, _ = \
-                        run_epoch(session, mTrain,
-                                  words_c, pos_c, chunk_c,
-                                  num_pos_tags, num_chunk_tags, vocab_size,
-                                  verbose=True, model_type=model_type)
+                _, posp_c, chunkp_c, _, _, _, _, _, _, _ = \
+                    run_epoch(session, mTrain,
+                              words_c, pos_c, chunk_c,
+                              num_pos_tags, num_chunk_tags, vocab_size,
+                              verbose=True, model_type=model_type)
 
         else:
-            _, posp_t, chunkp_t, _, _, _, _, _, _, _ = \
-                run_epoch_random.run_epoch(session, mTrain,
-                          words_c, words_ptb, pos_c, pos_ptb, chunk_c, chunk_ptb,
-                          num_pos_tags, num_chunk_tags, vocab_size,
-                          verbose=True, model_type=model_type)
+            print('Train Given Best Epoch Parameter :' + str(best_epoch[0]))
+            for i in range(best_epoch[0]):
+                print("Epoch: %d" % (i + 1))
+                _, posp_c, chunkp_c, _, _, _, _, _, _, _ = \
+                    run_epoch_random.run_epoch(session, mTrain,
+                              words_c, words_ptb, pos_c, pos_ptb, chunk_c, chunk_ptb,
+                              num_pos_tags, num_chunk_tags, vocab_size,
+                              verbose=True, model_type=model_type)
+
 
         print('Getting Testing Predictions')
         _, posp_test, chunkp_test, _, _, _, _, _, _, _ = \
