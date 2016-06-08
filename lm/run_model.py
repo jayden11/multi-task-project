@@ -379,4 +379,4 @@ if __name__ == "__main__":
          args.dropout, args.batch_size, \
          args.pos_embedding_size, args.num_shared_layers, args.num_private_layers, \
          args.chunk_embedding_size, args.lm_decoder_size, \
-         args.bidirectional, args.lstm, args.write_to_file, args.mix_percent)
+         args.bidirectional, args.lstm, args.write_to_file, float(args.mix_percent))

@@ -63,7 +63,7 @@ do
                         --bidirectional ${bidirectional} \
                         --lstm ${lstm} \
                         --mix_percent ${mix_percent} \
-                        --write_to_file "False" \
+                        --write_to_file "False"
                         -o "./data/outputs/${timestamp}/${name}.txt"
                     done
                   done
