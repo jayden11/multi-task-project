@@ -18,18 +18,18 @@ import run_epoch_random
 class Config(object):
     def __init__(self, num_steps, encoder_size, pos_decoder_size, chunk_decoder_size,
     dropout, batch_size, pos_embedding_size, num_shared_layers, num_private_layers, chunk_embedding_size,
-    lm_decoder_size, bidirectional, lstm):
+    lm_decoder_size, bidirectional, lstm, mix_percent):
         """Configuration for the network"""
         self.init_scale = 0.1 # initialisation scale
         self.learning_rate = 0.001 # learning_rate (if you are using SGD)
         self.max_grad_norm = 5 # for gradient clipping
         self.num_steps = int(num_steps) # length of sequence
-        self.word_embedding_size = 400 # size of the embedding
+        self.word_embedding_size = int(pos_embedding_size) # size of the embedding
         self.encoder_size = int(encoder_size) # first layer
         self.pos_decoder_size = int(pos_decoder_size) # second layer
         self.chunk_decoder_size = int(chunk_decoder_size) # second layer
         self.lm_decoder_size = int(lm_decoder_size) # second layer
-        self.max_epoch = 50 # maximum number of epochs
+        self.max_epoch = 2 # maximum number of epochs
         self.keep_prob = float(dropout) # for dropout
         self.batch_size = int(batch_size) # number of sequence
         self.pos_embedding_size = int(pos_embedding_size)
@@ -38,21 +38,22 @@ class Config(object):
         self.argmax = 0
         self.chunk_embedding_size = int(chunk_embedding_size)
         self.lm_decoder_size = int(lm_decoder_size)
-        self.random_mix = True
-        self.ptb = True
+        self.random_mix = False
+        self.ptb = False
         self.lstm = lstm
         self.bidirectional = bidirectional
+        self.mix_percent = mix_percent
 
 def main(model_type, dataset_path, ptb_path, save_path,
     num_steps, encoder_size, pos_decoder_size, chunk_decoder_size, dropout,
     batch_size, pos_embedding_size, num_shared_layers, num_private_layers, chunk_embedding_size,
-    lm_decoder_size, bidirectional, lstm, write_to_file):
+    lm_decoder_size, bidirectional, lstm, write_to_file, mix_percent):
 
 
     """Main."""
     config = Config(num_steps, encoder_size, pos_decoder_size, chunk_decoder_size, dropout,
     batch_size, pos_embedding_size, num_shared_layers, num_private_layers, chunk_embedding_size,
-    lm_decoder_size, bidirectional, lstm)
+    lm_decoder_size, bidirectional, lstm, mix_percent)
 
     raw_data_path = dataset_path + '/data'
     raw_data = reader.raw_x_y_data(
@@ -364,6 +365,7 @@ if __name__ == "__main__":
     parser.add_argument("--lm_decoder_size")
     parser.add_argument("--bidirectional")
     parser.add_argument("--lstm")
+    parser.add_argument("--mix_percent")
     parser.add_argument("--write_to_file")
     args = parser.parse_args()
     if (str(args.model_type) != "POS") and (str(args.model_type) != "CHUNK"):
@@ -376,4 +378,4 @@ if __name__ == "__main__":
          args.dropout, args.batch_size, \
          args.pos_embedding_size, args.num_shared_layers, args.num_private_layers, \
          args.chunk_embedding_size, args.lm_decoder_size, \
-         args.bidirectional, args.lstm, args.write_to_file)
+         args.bidirectional, args.lstm, args.write_to_file, args.mix_percent)

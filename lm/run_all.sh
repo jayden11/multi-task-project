@@ -5,7 +5,7 @@ python3 run_model.py --model_type "JOINT" \
                      --dataset_path "../../data/conll" \
                      --ptb_path "../../data/ptb" \
                      --save_path "../../data/outputs/test" \
-                     --num_steps 200 \
+                     --num_steps 20 \
                      --encoder_size 200 \
                      --pos_decoder_size 200 \
                      --chunk_decoder_size 200 \
@@ -18,4 +18,5 @@ python3 run_model.py --model_type "JOINT" \
                      --lm_decoder_size  200 \
                      --bidirectional "False" \
                      --lstm "False" \
-                     --write_to_file "True"
+                     --mix_percent 0.3 \
+                     --write_to_file "False"

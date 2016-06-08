@@ -34,6 +34,7 @@ class Shared_Model(object):
         self.num_private_layers = num_private_layers = config.num_private_layers
         self.argmax = config.argmax
         self.lm_decoder_size = config.lm_decoder_size
+        self.mix_percent = config.mix_percent
 
 
         # add input size - size of pos tags
