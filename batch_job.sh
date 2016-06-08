@@ -43,27 +43,28 @@ do
                     for mix_percent in 0.1 0.2 0.3 0.4 0.5
                     do
                     name="Conll_${num_steps}n_${encoder_size}e_${decoder_size}d_${dropout}drop_${batch_size}b_${embedding_size}emb_${num_shared_layers}s_${num_private_layers}p_${bidirectional}bi_${lstm}cell"
-                    LD_LIBRARY_PATH='/share/apps/mr/utils/libc6_2.17/lib/x86_64-linux-gnu/:/share/apps/mr/utils/lib6_2.17/usr/lib64/:/share/apps/gcc-5.2.0/lib64' \
+                    LD_LIBRARY_PATH='/share/apps/mr/utils/libc6_2.17/lib/x86_64-linux-gnu/:/share/apps/mr/utils/lib6_2.17/usr/lib64/:/share/apps/gcc-5.2.0/lib64:/share/apps/gcc-5.2.0/lib:/opt/gridengine/lib/linux-x64:/opt/gridengine/lib/linux-x64:/opt/openmpi/lib:/opt/python/lib:/share/apps/mr/cuda/lib:/share/apps/mr/cuda/lib64:/share/apps/mr/cuda/lib:/share/apps/mr/cuda/lib64' \
                       ~/utils/libc6_2.17/lib/x86_64-linux-gnu/ld-2.17.so /share/apps/mr/bin/python3 \
                       ./multi-task-project/lm/run_model.py --model_type "JOINT" \
-                                           --dataset_path "./data/conll" \
-                                           --ptb_path "./data/ptb" \
-                                           --save_path "./data/outputs/${timestamp}" \
-                                           --num_steps ${num_steps} \
-                                           --encoder_size ${encoder_size} \
-                                           --pos_decoder_size ${decoder_size} \
-                                           --chunk_decoder_size ${decoder_size} \
-                                           --dropout ${dropout} \
-                                           --batch_size ${batch_size} \
-                                           --pos_embedding_size ${embedding_size} \
-                                           --num_shared_layers ${num_shared_layers} \
-                                           --num_private_layers ${num_private_layers} \
-                                           --chunk_embedding_size ${embedding_size} \
-                                           --lm_decoder_size  ${decoder_size} \
-                                           --bidirectional ${bidirectional} \
-                                           --lstm ${lstm} \
-                                           --mix_percent ${mix_percent} \
-                                           --write_to_file "False" -o "./data/outputs/${timestamp}/${name}.txt"
+                        --dataset_path "./data/conll" \
+                        --ptb_path "./data/ptb" \
+                        --save_path "./data/outputs/${timestamp}" \
+                        --num_steps ${num_steps} \
+                        --encoder_size ${encoder_size} \
+                        --pos_decoder_size ${decoder_size} \
+                        --chunk_decoder_size ${decoder_size} \
+                        --dropout ${dropout} \
+                        --batch_size ${batch_size} \
+                        --pos_embedding_size ${embedding_size} \
+                        --num_shared_layers ${num_shared_layers} \
+                        --num_private_layers ${num_private_layers} \
+                        --chunk_embedding_size ${embedding_size} \
+                        --lm_decoder_size  ${decoder_size} \
+                        --bidirectional ${bidirectional} \
+                        --lstm ${lstm} \
+                        --mix_percent ${mix_percent} \
+                        --write_to_file "False" \
+                        -o "./data/outputs/${timestamp}/${name}.txt"
                     done
                   done
                 done
