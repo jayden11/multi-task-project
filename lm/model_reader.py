@@ -48,8 +48,9 @@ def read_tokens(filename, padding_val, col_val=-1):
     print('reading' + filename)
     if col_val!=-1:
         words = words[col_val]
-    return np.pad(
+    words = np.pad(
         words, pad_width=(padding_val, 0), mode='constant', constant_values=0)
+    return [str(x) for x in words]
 
 
 def _build_vocab(filename, ptb_filename, padding_width, col_val):
@@ -128,6 +129,23 @@ def raw_x_y_data(data_path, num_steps, ptb_data_path):
     comb_path = os.path.join(data_path, comb)
     test_path = os.path.join(data_path, test)
     ptb_path = os.path.join(ptb_data_path, ptb)
+
+    if os.path.exists(comb_path) != True:
+        print('writing combined')
+        test_data = pd.read_csv(test_path, sep= ' ',header=None)
+        train_data = pd.read_csv(train_path, sep= ' ',header=None)
+        valid_data = pd.read_csv(valid_path, sep= ' ', header=None)
+
+        comb = pd.concat([train_data,valid_data,test_data])
+        comb.to_csv(os.path.join(data_path,'critic_all_combined.txt'), sep=' ', index=False, header=False)
+
+    if os.path.exists(train_valid_path) != True:
+        print('writing combined')
+        valid_data = pd.read_csv(valid_path, sep= ' ',header=None)
+        train_data = pd.read_csv(train_path, sep= ' ',header=None)
+
+        comb = pd.concat([train_data,valid_data])
+        comb.to_csv(os.path.join(data_path,'critic_train_val_combined.txt'), sep=' ', index=False, header=False)
 
 
     word_to_id = _build_vocab(comb_path, ptb_path, num_steps-1, 0)

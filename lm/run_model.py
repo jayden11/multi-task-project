@@ -16,33 +16,44 @@ import run_epoch_random
 
 
 class Config(object):
-    def __init__(self,bidi):
+    def __init__(self, num_steps, encoder_size, pos_decoder_size, chunk_decoder_size,
+    dropout, batch_size, pos_embedding_size, num_shared_layers, num_private_layers, chunk_embedding_size,
+    lm_decoder_size, bidirectional, lstm):
         """Configuration for the network"""
         self.init_scale = 0.1 # initialisation scale
         self.learning_rate = 0.001 # learning_rate (if you are using SGD)
         self.max_grad_norm = 5 # for gradient clipping
-        self.num_steps = 20 # length of sequence
+        self.num_steps = int(num_steps) # length of sequence
         self.word_embedding_size = 400 # size of the embedding
-        self.encoder_size = 200 # first layer
-        self.pos_decoder_size = 200 # second layer
-        self.chunk_decoder_size = 200 # second layer
-        self.lm_decoder_size = 200 # second layer
-        self.max_epoch = 1 # maximum number of epochs
-        self.keep_prob = 0.5 # for dropout
-        self.batch_size = 64 # number of sequence
-        self.pos_embedding_size = 400
-        self.num_shared_layers = 1
+        self.encoder_size = int(encoder_size) # first layer
+        self.pos_decoder_size = int(pos_decoder_size) # second layer
+        self.chunk_decoder_size = int(chunk_decoder_size) # second layer
+        self.lm_decoder_size = int(lm_decoder_size) # second layer
+        self.max_epoch = 50 # maximum number of epochs
+        self.keep_prob = float(dropout) # for dropout
+        self.batch_size = int(batch_size) # number of sequence
+        self.pos_embedding_size = int(pos_embedding_size)
+        self.num_shared_layers = int(num_shared_layers)
+        self.num_private_layers = int(num_private_layers)
         self.argmax = 0
-        self.chunk_embedding_size = 400
-        self.lm_decoder_size = 200
+        self.chunk_embedding_size = int(chunk_embedding_size)
+        self.lm_decoder_size = int(lm_decoder_size)
         self.random_mix = True
         self.ptb = True
-        self.bidirectional = bidi
+        self.lstm = lstm
+        self.bidirectional = bidirectional
 
-def main(model_type, dataset_path, ptb_path, save_path, bidirectional):
+def main(model_type, dataset_path, ptb_path, save_path,
+    num_steps, encoder_size, pos_decoder_size, chunk_decoder_size, dropout,
+    batch_size, pos_embedding_size, num_shared_layers, num_private_layers, chunk_embedding_size,
+    lm_decoder_size, bidirectional, lstm, write_to_file):
+
+
     """Main."""
-    config = Config(bidirectional)
-    print(config.bidirectional)
+    config = Config(num_steps, encoder_size, pos_decoder_size, chunk_decoder_size, dropout,
+    batch_size, pos_embedding_size, num_shared_layers, num_private_layers, chunk_embedding_size,
+    lm_decoder_size, bidirectional, lstm)
+
     raw_data_path = dataset_path + '/data'
     raw_data = reader.raw_x_y_data(
         raw_data_path, config.num_steps, ptb_path + '/data')
@@ -219,113 +230,119 @@ def main(model_type, dataset_path, ptb_path, save_path, bidirectional):
         lmt_v = reader._res_to_list(lmt_v, config.batch_size,
                                        config.num_steps, word_to_id, len(words_v), to_str=True)
         # Save loss & accuracy plots
-        np.savetxt(save_path + '/loss/valid_loss_stats.txt', valid_loss_stats)
-        np.savetxt(save_path + '/loss/valid_pos_loss_stats.txt', valid_pos_loss_stats)
-        np.savetxt(save_path + '/loss/valid_chunk_loss_stats.txt', valid_chunk_loss_stats)
-        np.savetxt(save_path + '/loss/valid_lm_loss_stats.txt', valid_lm_loss_stats)
-        np.savetxt(save_path + '/accuracy/valid_pos_stats.txt', valid_pos_stats)
-        np.savetxt(save_path + '/accuracy/valid_chunk_stats.txt', valid_chunk_stats)
-        np.savetxt(save_path + '/accuracy/valid_lm_stats.txt', valid_chunk_stats)
+        if write_to_file:
+            np.savetxt(save_path + '/loss/valid_loss_stats.txt', valid_loss_stats)
+            np.savetxt(save_path + '/loss/valid_pos_loss_stats.txt', valid_pos_loss_stats)
+            np.savetxt(save_path + '/loss/valid_chunk_loss_stats.txt', valid_chunk_loss_stats)
+            np.savetxt(save_path + '/loss/valid_lm_loss_stats.txt', valid_lm_loss_stats)
+            np.savetxt(save_path + '/accuracy/valid_pos_stats.txt', valid_pos_stats)
+            np.savetxt(save_path + '/accuracy/valid_chunk_stats.txt', valid_chunk_stats)
+            np.savetxt(save_path + '/accuracy/valid_lm_stats.txt', valid_chunk_stats)
 
-        np.savetxt(save_path + '/loss/train_loss_stats.txt', train_loss_stats)
-        np.savetxt(save_path + '/loss/train_pos_loss_stats.txt', train_pos_loss_stats)
-        np.savetxt(save_path + '/loss/train_chunk_loss_stats.txt', train_chunk_loss_stats)
-        np.savetxt(save_path + '/loss/train_lm_loss_stats.txt', train_lm_loss_stats)
-        np.savetxt(save_path + '/accuracy/train_pos_stats.txt', train_pos_stats)
-        np.savetxt(save_path + '/accuracy/train_chunk_stats.txt', train_chunk_stats)
-        np.savetxt(save_path + '/accuracy/train_lm_stats.txt', train_lm_stats)
+            np.savetxt(save_path + '/loss/train_loss_stats.txt', train_loss_stats)
+            np.savetxt(save_path + '/loss/train_pos_loss_stats.txt', train_pos_loss_stats)
+            np.savetxt(save_path + '/loss/train_chunk_loss_stats.txt', train_chunk_loss_stats)
+            np.savetxt(save_path + '/loss/train_lm_loss_stats.txt', train_lm_loss_stats)
+            np.savetxt(save_path + '/accuracy/train_pos_stats.txt', train_pos_stats)
+            np.savetxt(save_path + '/accuracy/train_chunk_stats.txt', train_chunk_stats)
+            np.savetxt(save_path + '/accuracy/train_lm_stats.txt', train_lm_stats)
 
-        # Train given epoch parameter
-        if config.random_mix == False:
-            print('Train Given Best Epoch Parameter :' + str(best_epoch[0]))
-            for i in range(best_epoch[0]):
-                print("Epoch: %d" % (i + 1))
-                if config.ptb == False:
-                    _, _, _, _, _, _, _, _, _, _ = \
+        if write_to_file:
+
+            # Train given epoch parameter
+            if config.random_mix == False:
+                print('Train Given Best Epoch Parameter :' + str(best_epoch[0]))
+                for i in range(best_epoch[0]):
+                    print("Epoch: %d" % (i + 1))
+                    if config.ptb == False:
+                        _, _, _, _, _, _, _, _, _, _ = \
+                            run_epoch(session, mTrain,
+                                      words_ptb, pos_ptb, chunk_ptb,
+                                      num_pos_tags, num_chunk_tags, vocab_size,
+                                      verbose=True, model_type="LM")
+
+                    _, posp_c, chunkp_c, _, _, _, _, _, _, _ = \
                         run_epoch(session, mTrain,
-                                  words_ptb, pos_ptb, chunk_ptb,
+                                  words_c, pos_c, chunk_c,
                                   num_pos_tags, num_chunk_tags, vocab_size,
-                                  verbose=True, model_type="LM")
+                                  verbose=True, model_type=model_type)
 
-                _, posp_c, chunkp_c, _, _, _, _, _, _, _ = \
-                    run_epoch(session, mTrain,
-                              words_c, pos_c, chunk_c,
-                              num_pos_tags, num_chunk_tags, vocab_size,
-                              verbose=True, model_type=model_type)
+            else:
+                print('Train Given Best Epoch Parameter :' + str(best_epoch[0]))
+                for i in range(best_epoch[0]):
+                    print("Epoch: %d" % (i + 1))
+                    _, posp_c, chunkp_c, _, _, _, _, _, _, _ = \
+                        run_epoch_random.run_epoch(session, mTrain,
+                                  words_c, words_ptb, pos_c, pos_ptb, chunk_c, chunk_ptb,
+                                  num_pos_tags, num_chunk_tags, vocab_size,
+                                  verbose=True, model_type=model_type)
+
+
+            print('Getting Testing Predictions')
+            _, posp_test, chunkp_test, _, _, _, _, _, _, _ = \
+                run_epoch(session, mTest,
+                          words_test, pos_test, chunk_test,
+                          num_pos_tags, num_chunk_tags, vocab_size,
+                          verbose=True, valid=True, model_type=model_type)
+
+
+            print('Writing Predictions')
+            # prediction reshaping
+            posp_c = reader._res_to_list(posp_c, config.batch_size, config.num_steps,
+                                         pos_to_id, len(words_c),to_str=True)
+            posp_test = reader._res_to_list(posp_test, config.batch_size, config.num_steps,
+                                            pos_to_id, len(words_test),to_str=True)
+            chunkp_c = reader._res_to_list(chunkp_c, config.batch_size,
+                                           config.num_steps, chunk_to_id, len(words_c),to_str=True)
+            chunkp_test = reader._res_to_list(chunkp_test, config.batch_size, config.num_steps,
+                                              chunk_to_id, len(words_test), to_str=True)
+
+            # save pickle - save_path + '/saved_variables.pkl'
+            print('saving variables (pickling)')
+            saveload.save(save_path + '/saved_variables.pkl', session)
+
+            train_custom = reader.read_tokens(raw_data_path + '/train.txt', 0)
+            valid_custom = reader.read_tokens(raw_data_path + '/validation.txt', 0)
+            combined = reader.read_tokens(raw_data_path + '/train_val_combined.txt', 0)
+            test_data = reader.read_tokens(raw_data_path + '/test.txt', 0)
+
+            print('loaded text')
+            chunk_pred_train = np.concatenate((np.transpose(train_custom), chunkp_t), axis=1)
+            chunk_pred_val = np.concatenate((np.transpose(valid_custom), chunkp_v), axis=1)
+            chunk_pred_c = np.concatenate((np.transpose(combined), chunkp_c), axis=1)
+            chunk_pred_test = np.concatenate((np.transpose(test_data), chunkp_test), axis=1)
+            pos_pred_train = np.concatenate((np.transpose(train_custom), posp_t), axis=1)
+            pos_pred_val = np.concatenate((np.transpose(valid_custom), posp_v), axis=1)
+            pos_pred_c = np.concatenate((np.transpose(combined), posp_c), axis=1)
+            pos_pred_test = np.concatenate((np.transpose(test_data), posp_test), axis=1)
+
+            print('finished concatenating, about to start saving')
+
+            np.savetxt(save_path + '/predictions/chunk_pred_train.txt',
+                       chunk_pred_train, fmt='%s')
+            print('writing to ' + save_path + '/predictions/chunk_pred_train.txt')
+            np.savetxt(save_path + '/predictions/chunk_pred_val.txt',
+                       chunk_pred_val, fmt='%s')
+            print('writing to ' + save_path + '/predictions/chunk_pred_val.txt')
+            np.savetxt(save_path + '/predictions/chunk_pred_combined.txt',
+                       chunk_pred_c, fmt='%s')
+            print('writing to ' + save_path + '/predictions/chunk_pred_val.txt')
+            np.savetxt(save_path + '/predictions/chunk_pred_test.txt',
+                       chunk_pred_test, fmt='%s')
+            print('writing to ' + save_path + '/predictions/chunk_pred_val.txt')
+            np.savetxt(save_path + '/predictions/pos_pred_train.txt',
+                       pos_pred_train, fmt='%s')
+            print('writing to ' + save_path + '/predictions/chunk_pred_val.txt')
+            np.savetxt(save_path + '/predictions/pos_pred_val.txt',
+                       pos_pred_val, fmt='%s')
+            print('writing to ' + save_path + '/predictions/chunk_pred_val.txt')
+            np.savetxt(save_path + '/predictions/pos_pred_combined.txt',
+                       pos_pred_c, fmt='%s')
+            np.savetxt(save_path + '/predictions/pos_pred_test.txt',
+                       pos_pred_test, fmt='%s')
 
         else:
-            print('Train Given Best Epoch Parameter :' + str(best_epoch[0]))
-            for i in range(best_epoch[0]):
-                print("Epoch: %d" % (i + 1))
-                _, posp_c, chunkp_c, _, _, _, _, _, _, _ = \
-                    run_epoch_random.run_epoch(session, mTrain,
-                              words_c, words_ptb, pos_c, pos_ptb, chunk_c, chunk_ptb,
-                              num_pos_tags, num_chunk_tags, vocab_size,
-                              verbose=True, model_type=model_type)
-
-
-        print('Getting Testing Predictions')
-        _, posp_test, chunkp_test, _, _, _, _, _, _, _ = \
-            run_epoch(session, mTest,
-                      words_test, pos_test, chunk_test,
-                      num_pos_tags, num_chunk_tags, vocab_size,
-                      verbose=True, valid=True, model_type=model_type)
-
-
-        print('Writing Predictions')
-        # prediction reshaping
-        posp_c = reader._res_to_list(posp_c, config.batch_size, config.num_steps,
-                                     pos_to_id, len(words_c),to_str=True)
-        posp_test = reader._res_to_list(posp_test, config.batch_size, config.num_steps,
-                                        pos_to_id, len(words_test),to_str=True)
-        chunkp_c = reader._res_to_list(chunkp_c, config.batch_size,
-                                       config.num_steps, chunk_to_id, len(words_c),to_str=True)
-        chunkp_test = reader._res_to_list(chunkp_test, config.batch_size, config.num_steps,
-                                          chunk_to_id, len(words_test), to_str=True)
-
-        # save pickle - save_path + '/saved_variables.pkl'
-        print('saving variables (pickling)')
-        saveload.save(save_path + '/saved_variables.pkl', session)
-
-        train_custom = reader.read_tokens(raw_data_path + '/train.txt', 0)
-        valid_custom = reader.read_tokens(raw_data_path + '/validation.txt', 0)
-        combined = reader.read_tokens(raw_data_path + '/train_val_combined.txt', 0)
-        test_data = reader.read_tokens(raw_data_path + '/test.txt', 0)
-
-        print('loaded text')
-        chunk_pred_train = np.concatenate((np.transpose(train_custom), chunkp_t), axis=1)
-        chunk_pred_val = np.concatenate((np.transpose(valid_custom), chunkp_v), axis=1)
-        chunk_pred_c = np.concatenate((np.transpose(combined), chunkp_c), axis=1)
-        chunk_pred_test = np.concatenate((np.transpose(test_data), chunkp_test), axis=1)
-        pos_pred_train = np.concatenate((np.transpose(train_custom), posp_t), axis=1)
-        pos_pred_val = np.concatenate((np.transpose(valid_custom), posp_v), axis=1)
-        pos_pred_c = np.concatenate((np.transpose(combined), posp_c), axis=1)
-        pos_pred_test = np.concatenate((np.transpose(test_data), posp_test), axis=1)
-
-        print('finished concatenating, about to start saving')
-
-        np.savetxt(save_path + '/predictions/chunk_pred_train.txt',
-                   chunk_pred_train, fmt='%s')
-        print('writing to ' + save_path + '/predictions/chunk_pred_train.txt')
-        np.savetxt(save_path + '/predictions/chunk_pred_val.txt',
-                   chunk_pred_val, fmt='%s')
-        print('writing to ' + save_path + '/predictions/chunk_pred_val.txt')
-        np.savetxt(save_path + '/predictions/chunk_pred_combined.txt',
-                   chunk_pred_c, fmt='%s')
-        print('writing to ' + save_path + '/predictions/chunk_pred_val.txt')
-        np.savetxt(save_path + '/predictions/chunk_pred_test.txt',
-                   chunk_pred_test, fmt='%s')
-        print('writing to ' + save_path + '/predictions/chunk_pred_val.txt')
-        np.savetxt(save_path + '/predictions/pos_pred_train.txt',
-                   pos_pred_train, fmt='%s')
-        print('writing to ' + save_path + '/predictions/chunk_pred_val.txt')
-        np.savetxt(save_path + '/predictions/pos_pred_val.txt',
-                   pos_pred_val, fmt='%s')
-        print('writing to ' + save_path + '/predictions/chunk_pred_val.txt')
-        np.savetxt(save_path + '/predictions/pos_pred_combined.txt',
-                   pos_pred_c, fmt='%s')
-        np.savetxt(save_path + '/predictions/pos_pred_test.txt',
-                   pos_pred_test, fmt='%s')
+            print('Best Validation Loss' + str(best_epoch[1]))
 
 
 if __name__ == "__main__":
@@ -334,10 +351,29 @@ if __name__ == "__main__":
     parser.add_argument("--dataset_path")
     parser.add_argument("--ptb_path")
     parser.add_argument("--save_path")
+    parser.add_argument("--num_steps")
+    parser.add_argument("--encoder_size")
+    parser.add_argument("--pos_decoder_size")
+    parser.add_argument("--chunk_decoder_size")
+    parser.add_argument("--dropout")
+    parser.add_argument("--batch_size")
+    parser.add_argument("--pos_embedding_size")
+    parser.add_argument("--num_shared_layers")
+    parser.add_argument("--num_private_layers")
+    parser.add_argument("--chunk_embedding_size")
+    parser.add_argument("--lm_decoder_size")
     parser.add_argument("--bidirectional")
+    parser.add_argument("--lstm")
+    parser.add_argument("--write_to_file")
     args = parser.parse_args()
     if (str(args.model_type) != "POS") and (str(args.model_type) != "CHUNK"):
         args.model_type = 'JOINT'
     print('Model Selected : ' + str(args.model_type))
     main(str(args.model_type),str(args.dataset_path), \
-         str(args.ptb_path),str(args.save_path), str(args.bidirectional))
+         str(args.ptb_path),str(args.save_path), \
+         args.num_steps, args.encoder_size, \
+         args.pos_decoder_size, args.chunk_decoder_size, \
+         args.dropout, args.batch_size, \
+         args.pos_embedding_size, args.num_shared_layers, args.num_private_layers, \
+         args.chunk_embedding_size, args.lm_decoder_size, \
+         args.bidirectional, args.lstm, args.write_to_file)
