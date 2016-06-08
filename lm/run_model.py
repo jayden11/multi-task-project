@@ -38,8 +38,8 @@ class Config(object):
         self.argmax = 0
         self.chunk_embedding_size = int(chunk_embedding_size)
         self.lm_decoder_size = int(lm_decoder_size)
-        self.random_mix = False
-        self.ptb = False
+        self.random_mix = True
+        self.ptb = True
         self.lstm = lstm
         self.bidirectional = bidirectional
         self.mix_percent = mix_percent
@@ -231,7 +231,7 @@ def main(model_type, dataset_path, ptb_path, save_path,
         lmt_v = reader._res_to_list(lmt_v, config.batch_size,
                                        config.num_steps, word_to_id, len(words_v), to_str=True)
         # Save loss & accuracy plots
-        if write_to_file:
+        if write_to_file == True:
             np.savetxt(save_path + '/loss/valid_loss_stats.txt', valid_loss_stats)
             np.savetxt(save_path + '/loss/valid_pos_loss_stats.txt', valid_pos_loss_stats)
             np.savetxt(save_path + '/loss/valid_chunk_loss_stats.txt', valid_chunk_loss_stats)
@@ -248,7 +248,7 @@ def main(model_type, dataset_path, ptb_path, save_path,
             np.savetxt(save_path + '/accuracy/train_chunk_stats.txt', train_chunk_stats)
             np.savetxt(save_path + '/accuracy/train_lm_stats.txt', train_lm_stats)
 
-        if write_to_file:
+        if write_to_file == True:
 
             # Train given epoch parameter
             if config.random_mix == False:
@@ -343,7 +343,8 @@ def main(model_type, dataset_path, ptb_path, save_path,
                        pos_pred_test, fmt='%s')
 
         else:
-            print('Best Validation Loss' + str(best_epoch[1]))
+            print('Best Validation Loss ' + str(best_epoch[1]))
+            print('Best Validation Epoch ' + str(best_epoch[0]))
 
 
 if __name__ == "__main__":
