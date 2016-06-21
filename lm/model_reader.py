@@ -52,6 +52,17 @@ def read_tokens(filename, padding_val, col_val=-1):
         words, pad_width=(padding_val, 0), mode='constant', constant_values=0)
     return [str(x) for x in words]
 
+def import_embeddings(filename):
+    with open('../../data/glove.6B/glove.6B.300d.txt', 'rt', encoding='utf8') as csvfile:
+        r = csv.reader(csvfile, delimiter=' ', quoting=csv.QUOTE_NONE)
+        words = np.array(list(r)).astype(object)
+    return words
+
+def _generate_embeddings_word_to_id(filename):
+    # transpose so we get the words as a columns
+    embeddings = np.transpose(import_embeddings(filename))
+    word_to_id = dict(zip(embeddings[0],range(len(embeddings)))
+    return word_to_id
 
 def _build_vocab(filename, ptb_filename, padding_width, col_val):
     # can be used for input vocab
@@ -65,7 +76,6 @@ def _build_vocab(filename, ptb_filename, padding_width, col_val):
     count_pairs = sorted(counter.items(), key=lambda x: -x[1])
     words, _ = list(zip(*count_pairs))
     word_to_id = dict(zip(words, range(len(words))))
-
     return word_to_id
 
 def _build_tags(filename, padding_width, col_val):
@@ -115,7 +125,7 @@ def _file_to_tag_classifications(filename, tag_to_id, padding_width, col_val):
     return [tag_to_id[tag] for tag in data]
 
 
-def raw_x_y_data(data_path, num_steps, ptb_data_path):
+def raw_x_y_data(data_path, num_steps, ptb_data_path, embedding=False,embedding_path=''):
     train = "train.txt"
     valid = "validation.txt"
     train_valid = "train_val_combined.txt"
@@ -147,8 +157,10 @@ def raw_x_y_data(data_path, num_steps, ptb_data_path):
         comb = pd.concat([train_data,valid_data])
         comb.to_csv(os.path.join(data_path,'critic_train_val_combined.txt'), sep=' ', index=False, header=False)
 
-
-    word_to_id = _build_vocab(comb_path, ptb_path, num_steps-1, 0)
+    if embedding == True:
+        word_to_id = _generate_embeddings_word_to_id(embedding_path)
+    else:
+        word_to_id = _build_vocab(comb_path, ptb_path, num_steps-1, 0)
     # use the full training set for building the target tags
     pos_to_id = _build_tags(comb_path, num_steps-1, 1)
     chunk_to_id = _build_tags(comb_path, num_steps-1, 2)

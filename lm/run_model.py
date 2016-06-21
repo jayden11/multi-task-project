@@ -47,7 +47,7 @@ class Config(object):
 def main(model_type, dataset_path, ptb_path, save_path,
     num_steps, encoder_size, pos_decoder_size, chunk_decoder_size, dropout,
     batch_size, pos_embedding_size, num_shared_layers, num_private_layers, chunk_embedding_size,
-    lm_decoder_size, bidirectional, lstm, write_to_file, mix_percent):
+    lm_decoder_size, bidirectional, lstm, write_to_file, mix_percent,embedding=False):
 
 
     """Main."""
@@ -57,7 +57,7 @@ def main(model_type, dataset_path, ptb_path, save_path,
 
     raw_data_path = dataset_path + '/data'
     raw_data = reader.raw_x_y_data(
-        raw_data_path, config.num_steps, ptb_path + '/data')
+        raw_data_path, config.num_steps, ptb_path + '/data', embedding, raw_data_path + 'glove.6B/glove.6B.300d.txt')
 
     words_t, pos_t, chunk_t, words_v, \
         pos_v, chunk_v, word_to_id, pos_to_id, \
@@ -368,6 +368,7 @@ if __name__ == "__main__":
     parser.add_argument("--lstm")
     parser.add_argument("--mix_percent")
     parser.add_argument("--write_to_file")
+    parser.add_argument("--embedding")
     args = parser.parse_args()
     if (str(args.model_type) != "POS") and (str(args.model_type) != "CHUNK"):
         args.model_type = 'JOINT'
@@ -379,4 +380,5 @@ if __name__ == "__main__":
          args.dropout, args.batch_size, \
          args.pos_embedding_size, args.num_shared_layers, args.num_private_layers, \
          args.chunk_embedding_size, args.lm_decoder_size, \
-         args.bidirectional, args.lstm, args.write_to_file, float(args.mix_percent))
+         args.bidirectional, args.lstm, args.write_to_file, float(args.mix_percent)), \
+         args.embedding

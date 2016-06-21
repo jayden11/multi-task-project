@@ -11,13 +11,14 @@ echo 'Running Model'
 #$ -N conll-batch-grid-search
 #$ -wd /home/jgodwin/
 #$ -t 1-2
+#$ -o ./data/outputs/grid_output/
 
 export PYTHONPATH=${PYTHONPATH}:/home/jgodwin/
 
 timestamp=`date -u +%Y-%m-%dT%H%MZ`
 mkdir "./data/outputs/${timestamp}"
 mkdir "./data/outputs/${timestamp}/grid_output"
-#$ -o "./data/outputs/${timestamp}/grid_output/""
+
 
 i=$(expr $SGE_TASK_ID - 1)
 
