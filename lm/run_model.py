@@ -24,7 +24,7 @@ class Config(object):
         self.learning_rate = 0.001 # learning_rate (if you are using SGD)
         self.max_grad_norm = 5 # for gradient clipping
         self.num_steps = int(num_steps) # length of sequence
-        self.word_embedding_size = int(pos_embedding_size) # size of the embedding
+        self.word_embedding_size = 300 # size of the embedding (consistent with glove)
         self.encoder_size = int(encoder_size) # first layer
         self.pos_decoder_size = int(pos_decoder_size) # second layer
         self.chunk_decoder_size = int(chunk_decoder_size) # second layer
@@ -49,7 +49,6 @@ def main(model_type, dataset_path, ptb_path, save_path,
     batch_size, pos_embedding_size, num_shared_layers, num_private_layers, chunk_embedding_size,
     lm_decoder_size, bidirectional, lstm, write_to_file, mix_percent,embedding=False):
 
-
     """Main."""
     config = Config(num_steps, encoder_size, pos_decoder_size, chunk_decoder_size, dropout,
     batch_size, pos_embedding_size, num_shared_layers, num_private_layers, chunk_embedding_size,
@@ -57,17 +56,16 @@ def main(model_type, dataset_path, ptb_path, save_path,
 
     raw_data_path = dataset_path + '/data'
     raw_data = reader.raw_x_y_data(
-        raw_data_path, config.num_steps, ptb_path + '/data', embedding, raw_data_path + 'glove.6B/glove.6B.300d.txt')
+        raw_data_path, config.num_steps, ptb_path + '/data', embedding, '../../data/glove.6B/glove.6B.300d.txt')
 
     words_t, pos_t, chunk_t, words_v, \
         pos_v, chunk_v, word_to_id, pos_to_id, \
         chunk_to_id, words_test, pos_test, chunk_test, \
-        words_c, pos_c, chunk_c, words_ptb, pos_ptb, chunk_ptb = raw_data
-
+        words_c, pos_c, chunk_c, words_ptb, pos_ptb, chunk_ptb, word_embedding = raw_data
 
     num_pos_tags = len(pos_to_id)
     num_chunk_tags = len(chunk_to_id)
-    vocab_size = len(word_to_id)
+    vocab_size = len(word_to_id) 
 
     with tf.Graph().as_default(), tf.Session() as session:
         initializer = tf.random_uniform_initializer(-config.init_scale,
@@ -76,18 +74,18 @@ def main(model_type, dataset_path, ptb_path, save_path,
         # model to train hyperparameters on
         with tf.variable_scope("hyp_model", reuse=None, initializer=initializer):
             m = Shared_Model(is_training=True, config=config, num_pos_tags=num_pos_tags,
-            num_chunk_tags=num_chunk_tags, vocab_size=vocab_size)
+            num_chunk_tags=num_chunk_tags, vocab_size=vocab_size,embedding=embedding)
         with tf.variable_scope("hyp_model", reuse=True, initializer=initializer):
             mvalid = Shared_Model(is_training=False, config=config, num_pos_tags=num_pos_tags,
-            num_chunk_tags=num_chunk_tags, vocab_size=vocab_size)
+            num_chunk_tags=num_chunk_tags, vocab_size=vocab_size,embedding=embedding)
 
         # model that trains, given hyper-parameters
         with tf.variable_scope("final_model", reuse=None, initializer=initializer):
             mTrain = Shared_Model(is_training=True, config=config, num_pos_tags=num_pos_tags,
-            num_chunk_tags=num_chunk_tags, vocab_size=vocab_size)
+            num_chunk_tags=num_chunk_tags, vocab_size=vocab_size,embedding=embedding)
         with tf.variable_scope("final_model", reuse=True, initializer=initializer):
             mTest = Shared_Model(is_training=False, config=config, num_pos_tags=num_pos_tags,
-            num_chunk_tags=num_chunk_tags, vocab_size=vocab_size)
+            num_chunk_tags=num_chunk_tags, vocab_size=vocab_size,embedding=embedding)
 
         tf.initialize_all_variables().run()
 
@@ -127,28 +125,54 @@ def main(model_type, dataset_path, ptb_path, save_path,
         for i in range(config.max_epoch):
 
             print("Epoch: %d" % (i + 1))
+            if embedding == False:
+                if config.random_mix == False:
+                    if config.ptb == True:
+                        _, _, _, _, _, _, _, _, _, _ = \
+                            run_epoch(session, m,
+                                      words_ptb, pos_ptb, chunk_ptb,
+                                      num_pos_tags, num_chunk_tags, vocab_size,
+                                      verbose=True, model_type='LM')
 
-            if config.random_mix == False:
-                if config.ptb == True:
-                    _, _, _, _, _, _, _, _, _, _ = \
+
+                    mean_loss, posp_t, chunkp_t, lmp_t, post_t, chunkt_t, lmt_t, pos_loss, chunk_loss, lm_loss = \
                         run_epoch(session, m,
-                                  words_ptb, pos_ptb, chunk_ptb,
+                                  words_t, pos_t, chunk_t,
                                   num_pos_tags, num_chunk_tags, vocab_size,
-                                  verbose=True, model_type='LM')
+                                  verbose=True, model_type=model_type)
 
-
-                mean_loss, posp_t, chunkp_t, lmp_t, post_t, chunkt_t, lmt_t, pos_loss, chunk_loss, lm_loss = \
-                    run_epoch(session, m,
-                              words_t, pos_t, chunk_t,
-                              num_pos_tags, num_chunk_tags, vocab_size,
-                              verbose=True, model_type=model_type)
-
+                else:
+                    mean_loss, posp_t, chunkp_t, lmp_t, post_t, chunkt_t, lmt_t, pos_loss, chunk_loss, lm_loss = \
+                        run_epoch_random.run_epoch(session, m,
+                                  words_t, words_ptb, pos_t, pos_ptb, chunk_t, chunk_ptb,
+                                  num_pos_tags, num_chunk_tags, vocab_size,
+                                  verbose=True, model_type=model_type)
             else:
-                mean_loss, posp_t, chunkp_t, lmp_t, post_t, chunkt_t, lmt_t, pos_loss, chunk_loss, lm_loss = \
-                    run_epoch_random.run_epoch(session, m,
-                              words_t, words_ptb, pos_t, pos_ptb, chunk_t, chunk_ptb,
-                              num_pos_tags, num_chunk_tags, vocab_size,
-                              verbose=True, model_type=model_type)
+                if config.random_mix == False:
+                    if config.ptb == True:
+                        _, _, _, _, _, _, _, _, _, _ = \
+                            run_epoch(session, m,
+                                      words_ptb, pos_ptb, chunk_ptb,
+                                      num_pos_tags, num_chunk_tags, vocab_size,
+                                      verbose=True, model_type='LM',
+                                      word_embedding=word_embedding, embedding=embedding)
+
+
+                    mean_loss, posp_t, chunkp_t, lmp_t, post_t, chunkt_t, lmt_t, pos_loss, chunk_loss, lm_loss = \
+                        run_epoch(session, m,
+                                  words_t, pos_t, chunk_t,
+                                  num_pos_tags, num_chunk_tags, vocab_size,
+                                  verbose=True, model_type=model_type,
+                                  word_embedding=word_embedding, embedding=embedding)
+
+                else:
+                    mean_loss, posp_t, chunkp_t, lmp_t, post_t, chunkt_t, lmt_t, pos_loss, chunk_loss, lm_loss = \
+                        run_epoch_random.run_epoch(session, m,
+                                  words_t, words_ptb, pos_t, pos_ptb, chunk_t, chunk_ptb,
+                                  num_pos_tags, num_chunk_tags, vocab_size,
+                                  verbose=True, model_type=model_type,
+                                  word_embedding=word_embedding, embedding=embedding)
+
 
             print('epoch finished')
             # Save stats for charts
@@ -380,5 +404,5 @@ if __name__ == "__main__":
          args.dropout, args.batch_size, \
          args.pos_embedding_size, args.num_shared_layers, args.num_private_layers, \
          args.chunk_embedding_size, args.lm_decoder_size, \
-         args.bidirectional, args.lstm, args.write_to_file, float(args.mix_percent)), \
-         args.embedding
+         bool(args.bidirectional), bool(args.lstm), bool(args.write_to_file), float(args.mix_percent), \
+         bool(args.embedding))

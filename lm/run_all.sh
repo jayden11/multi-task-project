@@ -19,4 +19,5 @@ python3 run_model.py --model_type "JOINT" \
                      --bidirectional "False" \
                      --lstm "False" \
                      --mix_percent 0.3 \
-                     --write_to_file "False"
+                     --write_to_file "True" \
+                     --embedding "True"

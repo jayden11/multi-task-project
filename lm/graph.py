@@ -12,7 +12,7 @@ import pdb
 class Shared_Model(object):
 
     def __init__(self, config, is_training, num_pos_tags, num_chunk_tags,
-        vocab_size):
+        vocab_size, embedding):
         """Initialisation
             basically set the self-variables up, so that we can call them
             as variables to the model.
@@ -35,7 +35,6 @@ class Shared_Model(object):
         self.argmax = config.argmax
         self.lm_decoder_size = config.lm_decoder_size
         self.mix_percent = config.mix_percent
-
 
         # add input size - size of pos tags
         self.pos_targets = tf.placeholder(tf.float32, [(batch_size*num_steps),
@@ -413,8 +412,13 @@ class Shared_Model(object):
             train_op = optimizer.apply_gradients(zip(grads, tvars))
             return train_op
 
-
-        word_embedding = tf.get_variable("word_embedding", [vocab_size, word_embedding_size])
+        if embedding==True:
+            word_embedding = tf.Variable(tf.constant(0.0, shape=[vocab_size, word_embedding_size]),
+                trainable=False, name="word_embedding")
+            self.embedding_placeholder = embedding_placeholder = tf.placeholder(tf.float32, [vocab_size, word_embedding_size])
+            embedding_init = word_embedding.assign(embedding_placeholder)
+        else:
+            word_embedding = tf.get_variable("word_embedding", [vocab_size, word_embedding_size])
         inputs = tf.nn.embedding_lookup(word_embedding, self.input_data)
 
         self.pos_embedding = pos_embedding = tf.get_variable("pos_embedding",

@@ -21,7 +21,8 @@ import saveload
 
 
 def run_epoch(session, m, conll_words, ptb_words, pos, ptb_pos, chunk, ptb_chunk, pos_vocab_size,
-            chunk_vocab_size, vocab_size, verbose=False, valid=False, model_type='JOINT'):
+            chunk_vocab_size, vocab_size, verbose=False, valid=False, model_type='JOINT',
+            word_embedding=None,embedding=False):
     """Runs the model on the given data."""
     # =====================================
     # Initialise variables
@@ -60,17 +61,31 @@ def run_epoch(session, m, conll_words, ptb_words, pos, ptb_pos, chunk, ptb_chunk
     # each data type in turn
     # ======================================================
 
-    def train_batch(batch, eval_op, model_type, epoch_stats):
+    def train_batch(batch, eval_op, model_type, epoch_stats,
+                    word_embedding=None, embedding=False):
         (x, y_pos, y_chunk, y_lm) = batch
-        joint_loss, _, pos_int_pred, chunk_int_pred, lm_int_pred, pos_int_true, \
-            chunk_int_true, lm_int_true, pos_loss, chunk_loss, lm_loss = \
-            session.run([m.joint_loss, eval_op, m.pos_int_pred,
-                         m.chunk_int_pred, m.lm_int_pred, m.pos_int_targ, m.chunk_int_targ,
-                         m.lm_int_targ, m.pos_loss, m.chunk_loss, m.lm_loss],
-                        {m.input_data: x,
-                         m.pos_targets: y_pos,
-                         m.chunk_targets: y_chunk,
-                         m.lm_targets: y_lm})
+
+        if embedding==True:
+            joint_loss, _, pos_int_pred, chunk_int_pred, lm_int_pred, pos_int_true, \
+                chunk_int_true, lm_int_true, pos_loss, chunk_loss, lm_loss = \
+                session.run([m.joint_loss, eval_op, m.pos_int_pred,
+                             m.chunk_int_pred, m.lm_int_pred, m.pos_int_targ, m.chunk_int_targ,
+                             m.lm_int_targ, m.pos_loss, m.chunk_loss, m.lm_loss],
+                            {m.input_data: x,
+                             m.pos_targets: y_pos,
+                             m.chunk_targets: y_chunk,
+                             m.lm_targets: y_lm,
+                             m.embedding_placeholder: word_embedding})
+        else:
+            joint_loss, _, pos_int_pred, chunk_int_pred, lm_int_pred, pos_int_true, \
+                chunk_int_true, lm_int_true, pos_loss, chunk_loss, lm_loss = \
+                session.run([m.joint_loss, eval_op, m.pos_int_pred,
+                             m.chunk_int_pred, m.lm_int_pred, m.pos_int_targ, m.chunk_int_targ,
+                             m.lm_int_targ, m.pos_loss, m.chunk_loss, m.lm_loss],
+                            {m.input_data: x,
+                             m.pos_targets: y_pos,
+                             m.chunk_targets: y_chunk,
+                             m.lm_targets: y_lm})
 
         epoch_stats["comb_loss"] += joint_loss
         epoch_stats["chunk_total_loss"] += chunk_loss
@@ -123,12 +138,14 @@ def run_epoch(session, m, conll_words, ptb_words, pos, ptb_pos, chunk, ptb_chunk
             if random.random() < m.mix_percent:
                 eval_op = m.joint_op
                 epoch_stats = train_batch(next(conll_batches), \
-                    eval_op, "JOINT", epoch_stats)
+                    eval_op, "JOINT", epoch_stats, word_embedding=word_embedding,
+                    embedding=embedding)
                 conll_iter +=1
             else:
                 eval_op = m.lm_op
                 epoch_stats = train_batch(next(ptb_batches), \
-                    eval_op, "LM", epoch_stats)
+                    eval_op, "LM", epoch_stats, word_embedding=word_embedding,
+                    embedding=embedding)
                 ptb_iter += 1
 
     return (epoch_stats["comb_loss"] / epoch_stats["iters"]), \

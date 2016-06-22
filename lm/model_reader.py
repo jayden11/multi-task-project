@@ -53,16 +53,20 @@ def read_tokens(filename, padding_val, col_val=-1):
     return [str(x) for x in words]
 
 def import_embeddings(filename):
-    with open('../../data/glove.6B/glove.6B.300d.txt', 'rt', encoding='utf8') as csvfile:
+    with open(filename, 'rt', encoding='utf8') as csvfile:
         r = csv.reader(csvfile, delimiter=' ', quoting=csv.QUOTE_NONE)
         words = np.array(list(r)).astype(object)
     return words
 
 def _generate_embeddings_word_to_id(filename):
     # transpose so we get the words as a columns
+    print('reading in embeddings')
     embeddings = np.transpose(import_embeddings(filename))
-    word_to_id = dict(zip(embeddings[0],range(len(embeddings)))
-    return word_to_id
+
+    word_to_id = dict(zip(embeddings[0],range(len(embeddings[0]))))
+    word_to_id['<unk>'] = len(embeddings[0])
+    word_embedding= np.vstack((np.transpose(embeddings[1:len(embeddings)]),np.zeros(300)))
+    return word_to_id, word_embedding
 
 def _build_vocab(filename, ptb_filename, padding_width, col_val):
     # can be used for input vocab
@@ -125,7 +129,7 @@ def _file_to_tag_classifications(filename, tag_to_id, padding_width, col_val):
     return [tag_to_id[tag] for tag in data]
 
 
-def raw_x_y_data(data_path, num_steps, ptb_data_path, embedding=False,embedding_path=''):
+def raw_x_y_data(data_path, num_steps, ptb_data_path, embedding=False, embedding_path=None):
     train = "train.txt"
     valid = "validation.txt"
     train_valid = "train_val_combined.txt"
@@ -158,15 +162,17 @@ def raw_x_y_data(data_path, num_steps, ptb_data_path, embedding=False,embedding_
         comb.to_csv(os.path.join(data_path,'critic_train_val_combined.txt'), sep=' ', index=False, header=False)
 
     if embedding == True:
-        word_to_id = _generate_embeddings_word_to_id(embedding_path)
+        word_to_id, word_embedding = _generate_embeddings_word_to_id(embedding_path)
     else:
         word_to_id = _build_vocab(comb_path, ptb_path, num_steps-1, 0)
+        word_embedding = None
+
     # use the full training set for building the target tags
     pos_to_id = _build_tags(comb_path, num_steps-1, 1)
     chunk_to_id = _build_tags(comb_path, num_steps-1, 2)
 
     word_data_t = _file_to_word_ids(train_path, word_to_id, num_steps-1)
-    pos_data_t = _file_to_tag_classifications(train_path, pos_to_id, num_steps-1, 1)
+    pos_data_t = _file_to_tag_classifications(train_path, pos_to_id, num_steps-1, 1,)
     chunk_data_t = _file_to_tag_classifications(train_path, chunk_to_id, num_steps-1, 2)
 
     ptb_word_data = _file_to_word_ids(ptb_path, word_to_id, num_steps-1)
@@ -188,7 +194,7 @@ def raw_x_y_data(data_path, num_steps, ptb_data_path, embedding=False,embedding_
     return word_data_t, pos_data_t, chunk_data_t, word_data_v, \
         pos_data_v, chunk_data_v, word_to_id, pos_to_id, chunk_to_id, \
         word_data_test, pos_data_test, chunk_data_test, word_data_c, \
-        pos_data_c, chunk_data_c, ptb_word_data, ptb_pos_data, ptb_chunk_data
+        pos_data_c, chunk_data_c, ptb_word_data, ptb_pos_data, ptb_chunk_data, word_embedding
 
 
 """
