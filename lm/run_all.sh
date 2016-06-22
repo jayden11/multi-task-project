@@ -16,8 +16,8 @@ python3 run_model.py --model_type "JOINT" \
                      --num_private_layers 1 \
                      --chunk_embedding_size 400 \
                      --lm_decoder_size  200 \
-                     --bidirectional "False" \
-                     --lstm "False" \
+                     --bidirectional 0 \
+                     --lstm 1 \
                      --mix_percent 0.3 \
-                     --write_to_file "True" \
-                     --embedding "True"
+                     --write_to_file 1 \
+                     --embedding 1

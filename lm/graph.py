@@ -414,7 +414,7 @@ class Shared_Model(object):
 
         if embedding==True:
             word_embedding = tf.Variable(tf.constant(0.0, shape=[vocab_size, word_embedding_size]),
-                trainable=False, name="word_embedding")
+                trainable=True, name="word_embedding")
             self.embedding_placeholder = embedding_placeholder = tf.placeholder(tf.float32, [vocab_size, word_embedding_size])
             embedding_init = word_embedding.assign(embedding_placeholder)
         else:

@@ -65,7 +65,7 @@ def main(model_type, dataset_path, ptb_path, save_path,
 
     num_pos_tags = len(pos_to_id)
     num_chunk_tags = len(chunk_to_id)
-    vocab_size = len(word_to_id) 
+    vocab_size = len(word_to_id)
 
     with tf.Graph().as_default(), tf.Session() as session:
         initializer = tf.random_uniform_initializer(-config.init_scale,
@@ -399,10 +399,10 @@ if __name__ == "__main__":
     print('Model Selected : ' + str(args.model_type))
     main(str(args.model_type),str(args.dataset_path), \
          str(args.ptb_path),str(args.save_path), \
-         args.num_steps, args.encoder_size, \
-         args.pos_decoder_size, args.chunk_decoder_size, \
-         args.dropout, args.batch_size, \
-         args.pos_embedding_size, args.num_shared_layers, args.num_private_layers, \
-         args.chunk_embedding_size, args.lm_decoder_size, \
-         bool(args.bidirectional), bool(args.lstm), bool(args.write_to_file), float(args.mix_percent), \
-         bool(args.embedding))
+         int(args.num_steps), int(args.encoder_size), \
+         int(args.pos_decoder_size), int(args.chunk_decoder_size), \
+         float(args.dropout), int(args.batch_size), \
+         int(args.pos_embedding_size), int(args.num_shared_layers), int(args.num_private_layers), \
+         int(args.chunk_embedding_size), int(args.lm_decoder_size), \
+         int(args.bidirectional), int(args.lstm), int(args.write_to_file), float(args.mix_percent), \
+         int(args.embedding))

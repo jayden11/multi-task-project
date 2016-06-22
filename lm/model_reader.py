@@ -53,20 +53,12 @@ def read_tokens(filename, padding_val, col_val=-1):
     return [str(x) for x in words]
 
 def import_embeddings(filename):
+    words = {}
     with open(filename, 'rt', encoding='utf8') as csvfile:
         r = csv.reader(csvfile, delimiter=' ', quoting=csv.QUOTE_NONE)
-        words = np.array(list(r)).astype(object)
+        for row in r:
+            words[row[0]] = row[1:301]
     return words
-
-def _generate_embeddings_word_to_id(filename):
-    # transpose so we get the words as a columns
-    print('reading in embeddings')
-    embeddings = np.transpose(import_embeddings(filename))
-
-    word_to_id = dict(zip(embeddings[0],range(len(embeddings[0]))))
-    word_to_id['<unk>'] = len(embeddings[0])
-    word_embedding= np.vstack((np.transpose(embeddings[1:len(embeddings)]),np.zeros(300)))
-    return word_to_id, word_embedding
 
 def _build_vocab(filename, ptb_filename, padding_width, col_val):
     # can be used for input vocab
@@ -161,8 +153,14 @@ def raw_x_y_data(data_path, num_steps, ptb_data_path, embedding=False, embedding
         comb = pd.concat([train_data,valid_data])
         comb.to_csv(os.path.join(data_path,'critic_train_val_combined.txt'), sep=' ', index=False, header=False)
 
+
     if embedding == True:
-        word_to_id, word_embedding = _generate_embeddings_word_to_id(embedding_path)
+        word_to_id = _build_vocab(comb_path, ptb_path, num_steps-1, 0)
+        word_embedding_full = import_embeddings(embedding_path)
+        id_to_word = {v: k for k, v in word_to_id.items()}
+        ordered_vocab = [id_to_word[i] for i in range(len(id_to_word))]
+        word_embedding = [word_embedding_full.get(key.lower(), np.zeros(300))
+                                   for key in ordered_vocab]
     else:
         word_to_id = _build_vocab(comb_path, ptb_path, num_steps-1, 0)
         word_embedding = None
