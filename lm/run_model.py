@@ -29,7 +29,7 @@ class Config(object):
         self.pos_decoder_size = int(pos_decoder_size) # second layer
         self.chunk_decoder_size = int(chunk_decoder_size) # second layer
         self.lm_decoder_size = int(lm_decoder_size) # second layer
-        self.max_epoch = 2 # maximum number of epochs
+        self.max_epoch = 1 # maximum number of epochs
         self.keep_prob = float(dropout) # for dropout
         self.batch_size = int(batch_size) # number of sequence
         self.pos_embedding_size = int(pos_embedding_size)
@@ -76,7 +76,7 @@ def main(model_type, dataset_path, ptb_path, save_path,
             m = Shared_Model(is_training=True, config=config, num_pos_tags=num_pos_tags,
             num_chunk_tags=num_chunk_tags, vocab_size=vocab_size,embedding=embedding)
         with tf.variable_scope("hyp_model", reuse=True, initializer=initializer):
-            mvalid = Shared_Model(is_training=False, config=config, num_pos_tags=num_pos_tags,
+            mValid = Shared_Model(is_training=False, config=config, num_pos_tags=num_pos_tags,
             num_chunk_tags=num_chunk_tags, vocab_size=vocab_size,embedding=embedding)
 
         # model that trains, given hyper-parameters
@@ -88,6 +88,14 @@ def main(model_type, dataset_path, ptb_path, save_path,
             num_chunk_tags=num_chunk_tags, vocab_size=vocab_size,embedding=embedding)
 
         tf.initialize_all_variables().run()
+        if embedding==True:
+            session.run([m.embedding_init, mValid.embedding_init, mTrain.embedding_init,
+                        mTest.embedding_init], {m.embedding_placeholder : word_embedding,
+                        mValid.embedding_placeholder : word_embedding,
+                        mTrain.embedding_placeholder : word_embedding,
+                        mTest.embedding_placeholder : word_embedding})
+
+        saver = tf.train.Saver()
 
         # Create an empty array to hold [epoch number, loss]
         best_epoch = [0, 100000]
@@ -198,7 +206,7 @@ def main(model_type, dataset_path, ptb_path, save_path,
             print("Chunk Training Accuracy After Epoch %d : %3f" % (i+1, chunk_acc))
 
             valid_loss, posp_v, chunkp_v, lmp_v, post_v, chunkt_v, lmt_v, pos_v_loss, chunk_v_loss, lm_v_loss = \
-                run_epoch(session, mvalid, words_v, pos_v, chunk_v,
+                run_epoch(session, mValid, words_v, pos_v, chunk_v,
                           num_pos_tags, num_chunk_tags, vocab_size,
                           verbose=True, valid=True, model_type=model_type)
 
@@ -224,6 +232,9 @@ def main(model_type, dataset_path, ptb_path, save_path,
             # update best parameters
             if(valid_loss < best_epoch[1]):
                 best_epoch = [i+1, valid_loss]
+
+            model_save_path = saver.save(session, save_path + '/val_model.ckpt')
+            print("Model saved in file: %s" % save_path)
 
 
         # get training predictions as list
@@ -323,13 +334,13 @@ def main(model_type, dataset_path, ptb_path, save_path,
                                               chunk_to_id, len(words_test), to_str=True)
 
             # save pickle - save_path + '/saved_variables.pkl'
-            print('saving variables (pickling)')
-            saveload.save(save_path + '/saved_variables.pkl', session)
+            print('saving checkpoint')
+            saver.save(session, save_path + '/final_model.ckpt')
 
-            train_custom = reader.read_tokens(raw_data_path + '/train.txt', 0)
-            valid_custom = reader.read_tokens(raw_data_path + '/validation.txt', 0)
-            combined = reader.read_tokens(raw_data_path + '/train_val_combined.txt', 0)
-            test_data = reader.read_tokens(raw_data_path + '/test.txt', 0)
+            train_custom = reader.read_tokens(raw_data_path + '/train.txt', 0,-1)
+            valid_custom = reader.read_tokens(raw_data_path + '/validation.txt',0, -1)
+            combined = reader.read_tokens(raw_data_path + '/train_val_combined.txt',0, -1)
+            test_data = reader.read_tokens(raw_data_path + '/test.txt',0, -1)
 
             print('loaded text')
             chunk_pred_train = np.concatenate((np.transpose(train_custom), chunkp_t), axis=1)

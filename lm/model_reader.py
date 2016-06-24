@@ -50,7 +50,10 @@ def read_tokens(filename, padding_val, col_val=-1):
         words = words[col_val]
     words = np.pad(
         words, pad_width=(padding_val, 0), mode='constant', constant_values=0)
-    return [str(x) for x in words]
+    if col_val!=-1:
+        return [str(x) for x in words]
+    else:
+        return words
 
 def import_embeddings(filename):
     words = {}
@@ -159,7 +162,7 @@ def raw_x_y_data(data_path, num_steps, ptb_data_path, embedding=False, embedding
         word_embedding_full = import_embeddings(embedding_path)
         id_to_word = {v: k for k, v in word_to_id.items()}
         ordered_vocab = [id_to_word[i] for i in range(len(id_to_word))]
-        word_embedding = [word_embedding_full.get(key.lower(), np.zeros(300))
+        word_embedding = [word_embedding_full.get(key.lower(), np.ones(300))
                                    for key in ordered_vocab]
     else:
         word_to_id = _build_vocab(comb_path, ptb_path, num_steps-1, 0)

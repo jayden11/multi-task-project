@@ -413,13 +413,16 @@ class Shared_Model(object):
             return train_op
 
         if embedding==True:
-            word_embedding = tf.Variable(tf.constant(0.0, shape=[vocab_size, word_embedding_size]),
+            word_embedding = word_embedding = tf.Variable(tf.constant(0.0, shape=[vocab_size, word_embedding_size]),
                 trainable=True, name="word_embedding")
             self.embedding_placeholder = embedding_placeholder = tf.placeholder(tf.float32, [vocab_size, word_embedding_size])
-            embedding_init = word_embedding.assign(embedding_placeholder)
+            self.embedding_init = word_embedding.assign(embedding_placeholder)
         else:
             word_embedding = tf.get_variable("word_embedding", [vocab_size, word_embedding_size])
+
         inputs = tf.nn.embedding_lookup(word_embedding, self.input_data)
+
+
 
         self.pos_embedding = pos_embedding = tf.get_variable("pos_embedding",
             [num_pos_tags, pos_embedding_size])
