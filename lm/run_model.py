@@ -47,7 +47,7 @@ class Config(object):
 def main(model_type, dataset_path, ptb_path, save_path,
     num_steps, encoder_size, pos_decoder_size, chunk_decoder_size, dropout,
     batch_size, pos_embedding_size, num_shared_layers, num_private_layers, chunk_embedding_size,
-    lm_decoder_size, bidirectional, lstm, write_to_file, mix_percent,embedding=False):
+    lm_decoder_size, bidirectional, lstm, write_to_file, mix_percent,glove_path,embedding=False):
 
     """Main."""
     config = Config(num_steps, encoder_size, pos_decoder_size, chunk_decoder_size, dropout,
@@ -56,7 +56,7 @@ def main(model_type, dataset_path, ptb_path, save_path,
 
     raw_data_path = dataset_path + '/data'
     raw_data = reader.raw_x_y_data(
-        raw_data_path, config.num_steps, ptb_path + '/data', embedding, '../../data/glove.6B/glove.6B.300d.txt')
+        raw_data_path, config.num_steps, ptb_path + '/data', embedding, glove_path)
 
     words_t, pos_t, chunk_t, words_v, \
         pos_v, chunk_v, word_to_id, pos_to_id, \
@@ -233,7 +233,8 @@ def main(model_type, dataset_path, ptb_path, save_path,
             if(valid_loss < best_epoch[1]):
                 best_epoch = [i+1, valid_loss]
 
-            model_save_path = saver.save(session, save_path + '/val_model.ckpt')
+            saveload(save_path + '/val_model.ckpt', session)
+            #model_save_path = saver.save(session, save_path + '/val_model.ckpt')
             print("Model saved in file: %s" % save_path)
 
 
@@ -335,7 +336,7 @@ def main(model_type, dataset_path, ptb_path, save_path,
 
             # save pickle - save_path + '/saved_variables.pkl'
             print('saving checkpoint')
-            saver.save(session, save_path + '/final_model.ckpt')
+            saveload(save_path + '/fin_model.ckpt', session)
 
             train_custom = reader.read_tokens(raw_data_path + '/train.txt', 0,-1)
             valid_custom = reader.read_tokens(raw_data_path + '/validation.txt',0, -1)
@@ -387,6 +388,7 @@ if __name__ == "__main__":
     parser.add_argument("--model_type")
     parser.add_argument("--dataset_path")
     parser.add_argument("--ptb_path")
+    parser.add_argument("--glove_path")
     parser.add_argument("--save_path")
     parser.add_argument("--num_steps")
     parser.add_argument("--encoder_size")
@@ -416,4 +418,4 @@ if __name__ == "__main__":
          int(args.pos_embedding_size), int(args.num_shared_layers), int(args.num_private_layers), \
          int(args.chunk_embedding_size), int(args.lm_decoder_size), \
          int(args.bidirectional), int(args.lstm), int(args.write_to_file), float(args.mix_percent), \
-         int(args.embedding))
+         str(args.glove_path),int(args.embedding))
