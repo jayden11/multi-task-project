@@ -233,7 +233,7 @@ def main(model_type, dataset_path, ptb_path, save_path,
             if(valid_loss < best_epoch[1]):
                 best_epoch = [i+1, valid_loss]
 
-            saveload(save_path + '/val_model.ckpt', session)
+            saveload.save(save_path + '/val_model.ckpt', session)
             #model_save_path = saver.save(session, save_path + '/val_model.ckpt')
             print("Model saved in file: %s" % save_path)
 
@@ -336,7 +336,7 @@ def main(model_type, dataset_path, ptb_path, save_path,
 
             # save pickle - save_path + '/saved_variables.pkl'
             print('saving checkpoint')
-            saveload(save_path + '/fin_model.ckpt', session)
+            saveload.save(save_path + '/fin_model.ckpt', session)
 
             train_custom = reader.read_tokens(raw_data_path + '/train.txt', 0,-1)
             valid_custom = reader.read_tokens(raw_data_path + '/validation.txt',0, -1)
