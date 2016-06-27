@@ -20,7 +20,7 @@ from graph import Shared_Model
 import saveload
 
 def run_epoch(session, m, words, pos, chunk, pos_vocab_size, chunk_vocab_size, vocab_size,
-              verbose=False, valid=False, model_type='JOINT', word_embedding=None, embedding=False):
+              verbose=False, valid=False, model_type='JOINT'):
     """Runs the model on the given data."""
     epoch_size = ((len(words) // m.batch_size) - 1) // m.num_steps
     start_time = time.time()
@@ -61,27 +61,15 @@ def run_epoch(session, m, words, pos, chunk, pos_vocab_size, chunk_vocab_size, v
             else:
                 eval_op = m.joint_op
 
-        if embedding==True:
-            joint_loss, _, pos_int_pred, chunk_int_pred, lm_int_pred, pos_int_true, \
-                chunk_int_true, lm_int_true, pos_loss, chunk_loss, lm_loss = \
-                session.run([m.joint_loss, eval_op, m.pos_int_pred,
-                             m.chunk_int_pred, m.lm_int_pred, m.pos_int_targ, m.chunk_int_targ,
-                             m.lm_int_targ, m.pos_loss, m.chunk_loss, m.lm_loss],
-                            {m.input_data: x,
-                             m.pos_targets: y_pos,
-                             m.chunk_targets: y_chunk,
-                             m.lm_targets: y_lm,
-                             m.embedding_placeholder: word_embedding})
-        else:
-            joint_loss, _, pos_int_pred, chunk_int_pred, lm_int_pred, pos_int_true, \
-                chunk_int_true, lm_int_true, pos_loss, chunk_loss, lm_loss = \
-                session.run([m.joint_loss, eval_op, m.pos_int_pred,
-                             m.chunk_int_pred, m.lm_int_pred, m.pos_int_targ, m.chunk_int_targ,
-                             m.lm_int_targ, m.pos_loss, m.chunk_loss, m.lm_loss],
-                            {m.input_data: x,
-                             m.pos_targets: y_pos,
-                             m.chunk_targets: y_chunk,
-                             m.lm_targets: y_lm})
+        joint_loss, _, pos_int_pred, chunk_int_pred, lm_int_pred, pos_int_true, \
+            chunk_int_true, lm_int_true, pos_loss, chunk_loss, lm_loss = \
+            session.run([m.joint_loss, eval_op, m.pos_int_pred,
+                         m.chunk_int_pred, m.lm_int_pred, m.pos_int_targ, m.chunk_int_targ,
+                         m.lm_int_targ, m.pos_loss, m.chunk_loss, m.lm_loss],
+                        {m.input_data: x,
+                         m.pos_targets: y_pos,
+                         m.chunk_targets: y_chunk,
+                         m.lm_targets: y_lm})
 
         comb_loss += joint_loss
         chunk_total_loss += chunk_loss
