@@ -40,6 +40,7 @@ def read_tokens(filename, padding_val, col_val=-1):
     # 0 - words
     # 1 - POS
     # 2 - tags
+    # -1 - for everything
 
     with open(filename, 'rt', encoding='utf8') as csvfile:
             r = csv.reader(csvfile, delimiter=' ')
@@ -51,7 +52,7 @@ def read_tokens(filename, padding_val, col_val=-1):
     words = np.pad(
         words, pad_width=(padding_val, 0), mode='constant', constant_values=0)
     if col_val!=-1:
-        return [str(x) for x in words]
+        return [str(x).lower() for x in words]
     else:
         return words
 
@@ -70,7 +71,21 @@ def _build_vocab(filename, ptb_filename, padding_width, col_val):
     data = np.concatenate((conll_data, ptb_data))
     counter = collections.Counter(data)
     # get rid of all words with frequency == 1
-    counter = {k: v for k, v in counter.items() if v > 1}
+    counter = {k: v for k, v in counter.items() if (v > 1)}
+    counter['<unk>'] = 10000
+    count_pairs = sorted(counter.items(), key=lambda x: -x[1])
+    words, _ = list(zip(*count_pairs))
+    word_to_id = dict(zip(words, range(len(words))))
+    return word_to_id
+
+def _build_vocab_embedding(filename, ptb_filename, padding_width, col_val, embedding):
+    # can be used for input vocab
+    conll_data = read_tokens(filename, padding_width, col_val)
+    ptb_data = read_tokens(ptb_filename, padding_width, col_val)
+    data = np.concatenate((conll_data, ptb_data))
+    counter = collections.Counter(data)
+    # get rid of all words with frequency == 1
+    counter = {k: v for k, v in counter.items() if (v > 1) or (k not in embedding)}
     counter['<unk>'] = 10000
     count_pairs = sorted(counter.items(), key=lambda x: -x[1])
     words, _ = list(zip(*count_pairs))
@@ -158,11 +173,11 @@ def raw_x_y_data(data_path, num_steps, ptb_data_path, embedding=False, embedding
 
 
     if embedding == True:
-        word_to_id = _build_vocab(comb_path, ptb_path, num_steps-1, 0)
         word_embedding_full = import_embeddings(embedding_path)
+        word_to_id = _build_vocab_embedding(comb_path, ptb_path, num_steps-1, 0, word_embedding_full)
         id_to_word = {v: k for k, v in word_to_id.items()}
         ordered_vocab = [id_to_word[i] for i in range(len(id_to_word))]
-        word_embedding = [word_embedding_full.get(key.lower(), np.ones(300))
+        word_embedding = [word_embedding_full.get(key.lower(), np.random.randn(300))
                                    for key in ordered_vocab]
     else:
         word_to_id = _build_vocab(comb_path, ptb_path, num_steps-1, 0)

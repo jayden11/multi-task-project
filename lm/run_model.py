@@ -229,8 +229,8 @@ def main(model_type, dataset_path, ptb_path, save_path,
             valid_lm_stats = np.append(valid_lm_stats, lm_acc)
 
             # update best parameters
-            if(valid_loss < best_epoch[1]):
-                best_epoch = [i+1, valid_loss]
+            if(chunk_acc < best_epoch[1]):
+                best_epoch = [i+1, chunk_acc]
 
             if write_to_file ==True:
                 saveload.save(save_path + '/val_model.pkl', session)
