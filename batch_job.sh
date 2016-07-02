@@ -90,7 +90,7 @@ num_steps_idx=$((i / steps))
 name="Conll_${num_steps[num_steps_idx]}n_${encoder_size[encoder_size_idx]}e_${decoder_size[decoder_size_idx]}d_${dropout[dropout_idx]}drop_${batch_size[batch_size_idx]}b_${embedding_size[embedding_size_idx]}emb_${num_shared_layers[num_shared_idx]}s_${num_private_layers[num_private_idx]}p_${bidirectional[bidirectional_idx]}bi_${lstm[lstm_idx]}cell_${mix_percent[mix_percent_idx]}mix"
 echo ${name}
 LD_LIBRARY_PATH='/share/apps/mr/utils/libc6_2.17/lib/x86_64-linux-gnu/:/share/apps/mr/utils/lib6_2.17/usr/lib64/:/share/apps/gcc-5.2.0/lib64:/share/apps/gcc-5.2.0/lib:/opt/gridengine/lib/linux-x64:/opt/gridengine/lib/linux-x64:/opt/openmpi/lib:/opt/python/lib:/share/apps/mr/cuda/lib:/share/apps/mr/cuda/lib64:/share/apps/mr/cuda/lib:/share/apps/mr/cuda/lib64' \
-  ~/utils/libc6_2.17/lib/x86_64-linux-gnu/ld-2.17.so /share/apps/mr/bin/python3 \
+  ~/utils/libc6_2.17/lib/x86_64-linux-gnu/ld-2.17.so CUDA_VISIBLE_DEVICES=0 /share/apps/mr/bin/python3 \
   ./multi-task-project/lm/run_model.py --model_type "JOINT" \
     --dataset_path "./data/conll" \
     --ptb_path "./data/ptb" \

@@ -13,6 +13,7 @@ from run_epoch import run_epoch
 import argparse
 import saveload
 import run_epoch_random
+import time
 
 
 class Config(object):
@@ -100,7 +101,7 @@ def main(model_type, dataset_path, ptb_path, save_path,
 
 
         # Create an empty array to hold [epoch number, loss]
-        best_epoch = [0, 100000]
+        best_epoch = [0, 0]
 
         print('finding best epoch parameter')
         # ====================================
@@ -144,7 +145,7 @@ def main(model_type, dataset_path, ptb_path, save_path,
                                       num_pos_tags, num_chunk_tags, vocab_size,
                                       verbose=True, model_type='LM')
 
-
+                    print(len(words_t))
                     mean_loss, posp_t, chunkp_t, lmp_t, post_t, chunkt_t, lmt_t, pos_loss, chunk_loss, lm_loss = \
                         run_epoch(session, m,
                                   words_t, pos_t, chunk_t,
@@ -229,7 +230,7 @@ def main(model_type, dataset_path, ptb_path, save_path,
             valid_lm_stats = np.append(valid_lm_stats, lm_acc)
 
             # update best parameters
-            if(chunk_acc < best_epoch[1]):
+            if(chunk_acc > best_epoch[1]):
                 best_epoch = [i+1, chunk_acc]
 
             if write_to_file ==True:

@@ -20,6 +20,6 @@ python3 run_model.py --model_type "JOINT" \
                      --bidirectional 1 \
                      --lstm 1 \
                      --mix_percent 0.3 \
-                     --write_to_file 1 \
+                     --write_to_file 0 \
                      --embedding 1 \
-                     --max_epoch 2
+                     --max_epoch 1
