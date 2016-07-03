@@ -222,6 +222,7 @@ class Shared_Model(object):
             pos_to_chunk_embed = tf.nn.embedding_lookup(pos_embedding,pos_int_pred)
         else:
             pos_to_chunk_embed = tf.matmul(tf.nn.softmax(pos_logits),pos_embedding)
+            pos_to_chunk_embed = tf.relu(pos_to_chunk_embed)
 
 
         chunk_logits, chunk_states = _chunk_private(encoding, pos_to_chunk_embed, config)

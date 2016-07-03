@@ -413,7 +413,11 @@ class Shared_Model(object):
             return train_op
 
         word_embedding = word_embedding = tf.get_variable("word_embedding",
-                                            initializer=tf.constant(word_embedding))
+                                            initializer=tf.constant(word_embedding), trainable=False)
+
+        word_embedding_w = tf.get_variable("word_embedding_w", [word_embedding_size, 100])
+        word_embedding = tf.matmul(word_embedding,word_embedding_w)
+        word_embedding = tf.nn.relu(word_embedding)
 
         inputs = tf.nn.embedding_lookup(word_embedding, self.input_data)
 
@@ -444,6 +448,7 @@ class Shared_Model(object):
             pos_to_chunk_embed = tf.nn.embedding_lookup(pos_embedding,pos_int_pred)
         else:
             pos_to_chunk_embed = tf.matmul(tf.nn.softmax(pos_logits),pos_embedding)
+            pos_to_chunk_embed = tf.nn.relu(pos_to_chunk_embed)
 
         chunk_logits = _chunk_private(encoding, pos_to_chunk_embed, config)
         chunk_loss, chunk_accuracy, chunk_int_pred, chunk_int_targ = _loss(chunk_logits, self.chunk_targets)
@@ -457,6 +462,7 @@ class Shared_Model(object):
             chunk_to_lm_embed = tf.nn.embedding_lookup(chunk_embedding,chunk_int_pred)
         else:
             chunk_to_lm_embed = tf.matmul(tf.nn.softmax(chunk_logits),chunk_embedding)
+            chunk_to_lm_embed = tf.nn.relu(chunk_to_lm_embed)
 
         lm_logits = _lm_private(encoding, chunk_to_lm_embed,  pos_to_chunk_embed, config)
         lm_loss, lm_accuracy, lm_int_pred, lm_int_targ = _loss(lm_logits, self.lm_targets)
