@@ -189,9 +189,9 @@ class Shared_Model(object):
                 softmax_b = tf.get_variable("softmax_b", [num_pos_tags])
                 logits = tf.matmul(output, softmax_w) + softmax_b
 
-            return logits
+            return logits, output
 
-        def _chunk_private(encoder_units, pos_prediction, config):
+        def _chunk_private(encoder_units, pos_prediction, pos_hidden, config):
             """Decode model for chunks
 
             Args:
@@ -207,7 +207,8 @@ class Shared_Model(object):
 
             pos_prediction = tf.reshape(pos_prediction,
                 [batch_size, num_steps, pos_embedding_size])
-            chunk_inputs = tf.concat(2, [pos_prediction, encoder_units])
+            pos_hidden = tf.reshape(pos_hidden, [batch_size, num_steps, config.pos_decoder_size])
+            chunk_inputs = tf.concat(2, [pos_prediction, encoder_units, pos_hidden])
 
             with tf.variable_scope("chunk_decoder"):
                 if config.bidirectional == True:
@@ -277,9 +278,9 @@ class Shared_Model(object):
                 softmax_b = tf.get_variable("softmax_b", [num_chunk_tags])
                 logits = tf.matmul(output, softmax_w) + softmax_b
 
-            return logits
+            return logits, output
 
-        def _lm_private(encoder_units, pos_prediction, chunk_prediction, config):
+        def _lm_private(encoder_units, pos_prediction, chunk_prediction, pos_hidden, chunk_hidden, config):
             """Decode model for lm
 
             Args:
@@ -295,9 +296,13 @@ class Shared_Model(object):
 
             pos_prediction = tf.reshape(pos_prediction,
                 [batch_size, num_steps, pos_embedding_size])
+            pos_hidden = tf.reshape(pos_hidden, [batch_size, num_steps,
+                                    config.pos_decoder_size])
+            chunk_hidden = tf.reshape(chunk_hidden, [batch_size, num_steps,
+                                    config.chunk_decoder_size])
             chunk_prediction = tf.reshape(chunk_prediction,
                 [batch_size, num_steps, chunk_embedding_size])
-            lm_inputs = tf.concat(2, [chunk_prediction, pos_prediction, encoder_units])
+            lm_inputs = tf.concat(2, [chunk_prediction, pos_prediction, chunk_hidden, pos_hidden, encoder_units])
 
             with tf.variable_scope("lm_decoder"):
                 if config.bidirectional == True:
@@ -436,7 +441,7 @@ class Shared_Model(object):
         encoding = tf.pack(encoding)
         encoding = tf.transpose(encoding, perm=[1, 0, 2])
 
-        pos_logits = _pos_private(encoding, config)
+        pos_logits, pos_hidden = _pos_private(encoding, config)
         pos_loss, pos_accuracy, pos_int_pred, pos_int_targ = _loss(pos_logits, self.pos_targets)
         self.pos_loss = pos_loss
 
@@ -448,9 +453,8 @@ class Shared_Model(object):
             pos_to_chunk_embed = tf.nn.embedding_lookup(pos_embedding,pos_int_pred)
         else:
             pos_to_chunk_embed = tf.matmul(tf.nn.softmax(pos_logits),pos_embedding)
-            pos_to_chunk_embed = tf.nn.relu(pos_to_chunk_embed)
 
-        chunk_logits = _chunk_private(encoding, pos_to_chunk_embed, config)
+        chunk_logits, chunk_hidden = _chunk_private(encoding, pos_to_chunk_embed, pos_hidden, config)
         chunk_loss, chunk_accuracy, chunk_int_pred, chunk_int_targ = _loss(chunk_logits, self.chunk_targets)
 
         self.chunk_loss = chunk_loss
@@ -462,9 +466,8 @@ class Shared_Model(object):
             chunk_to_lm_embed = tf.nn.embedding_lookup(chunk_embedding,chunk_int_pred)
         else:
             chunk_to_lm_embed = tf.matmul(tf.nn.softmax(chunk_logits),chunk_embedding)
-            chunk_to_lm_embed = tf.nn.relu(chunk_to_lm_embed)
 
-        lm_logits = _lm_private(encoding, chunk_to_lm_embed,  pos_to_chunk_embed, config)
+        lm_logits = _lm_private(encoding, chunk_to_lm_embed,  pos_to_chunk_embed, chunk_hidden, pos_hidden, config)
         lm_loss, lm_accuracy, lm_int_pred, lm_int_targ = _loss(lm_logits, self.lm_targets)
 
         self.lm_loss = lm_loss

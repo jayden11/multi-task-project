@@ -345,14 +345,14 @@ def main(model_type, dataset_path, ptb_path, save_path,
             test_data = reader.read_tokens(raw_data_path + '/test.txt',0, -1)
 
             print('loaded text')
-            chunk_pred_train = np.concatenate((np.transpose(train_custom), [s.upper() for s in chunkp_t]), axis=1)
-            chunk_pred_val = np.concatenate((np.transpose(valid_custom), [s.upper() for s in chunkp_v]), axis=1)
-            chunk_pred_c = np.concatenate((np.transpose(combined), [s.upper() for s in chunkp_c]), axis=1)
-            chunk_pred_test = np.concatenate((np.transpose(test_data), [s.upper() for s in chunkp_test]), axis=1)
-            pos_pred_train = np.concatenate((np.transpose(train_custom), [s.upper() for s in posp_t]), axis=1)
-            pos_pred_val = np.concatenate((np.transpose(valid_custom), [s.upper() for s in posp_v]), axis=1)
-            pos_pred_c = np.concatenate((np.transpose(combined), [s.upper for s in posp_c]), axis=1)
-            pos_pred_test = np.concatenate((np.transpose(test_data), [s.upper() for s in posp_test]), axis=1)
+            chunk_pred_train = np.concatenate((np.transpose(train_custom), np.char.upper(chunkp_t)), axis=1)
+            chunk_pred_val = np.concatenate((np.transpose(valid_custom), np.char.upper(chunkp_v)), axis=1)
+            chunk_pred_c = np.concatenate((np.transpose(combined), np.char.upper(chunkp_c)), axis=1)
+            chunk_pred_test = np.concatenate((np.transpose(test_data), np.char.upper(chunkp_test)), axis=1)
+            pos_pred_train = np.concatenate((np.transpose(train_custom), np.char.upper(posp_t)), axis=1)
+            pos_pred_val = np.concatenate((np.transpose(valid_custom), np.char.upper(posp_v)), axis=1)
+            pos_pred_c = np.concatenate((np.transpose(combined), np.char.upper(posp_c)), axis=1)
+            pos_pred_test = np.concatenate((np.transpose(test_data), np.char.upper(posp_test)), axis=1)
 
             print('finished concatenating, about to start saving')
 

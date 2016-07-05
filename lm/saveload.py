@@ -11,13 +11,13 @@ def save(save_path, sess):
         values = sess.run(variables)
         pickle.dump({var.name: val for var, val in zip(variables, values)}, file)
 
-def load_np(save_path):
+def load_np(save_path, sess):
 
     if not os.path.exists(save_path):
         raise Exception("No saved weights at that location")
     else:
         v_dict = pickle.load(open(save_path, "rb"))
-        for key in v_dict.keys():
+        for key, value in v_dict.items():
             print("Key name: " + key)
 
     return v_dict
