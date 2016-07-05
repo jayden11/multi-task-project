@@ -207,7 +207,7 @@ class Shared_Model(object):
 
             pos_prediction = tf.reshape(pos_prediction,
                 [batch_size, num_steps, pos_embedding_size])
-            pos_hidden = tf.reshape(pos_hidden, [batch_size, num_steps, config.pos_decoder_size])
+            pos_hidden = tf.reshape(pos_hidden, [batch_size, num_steps, 2*config.pos_decoder_size])
             chunk_inputs = tf.concat(2, [pos_prediction, encoder_units, pos_hidden])
 
             with tf.variable_scope("chunk_decoder"):
@@ -297,9 +297,9 @@ class Shared_Model(object):
             pos_prediction = tf.reshape(pos_prediction,
                 [batch_size, num_steps, pos_embedding_size])
             pos_hidden = tf.reshape(pos_hidden, [batch_size, num_steps,
-                                    config.pos_decoder_size])
+                                    2*config.pos_decoder_size])
             chunk_hidden = tf.reshape(chunk_hidden, [batch_size, num_steps,
-                                    config.chunk_decoder_size])
+                                    2*config.chunk_decoder_size])
             chunk_prediction = tf.reshape(chunk_prediction,
                 [batch_size, num_steps, chunk_embedding_size])
             lm_inputs = tf.concat(2, [chunk_prediction, pos_prediction, chunk_hidden, pos_hidden, encoder_units])
