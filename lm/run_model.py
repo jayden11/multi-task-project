@@ -365,7 +365,6 @@ def main(model_type, dataset_path, ptb_path, save_path,
             test_data = reader.read_tokens(raw_data_path + '/test.txt',-1)
 
             print('loaded text')
-            pdb.set_trace()
             chunk_pred_train = np.concatenate((np.transpose(train_custom), np.char.upper(chunkp_t[:len(train_custom[0])]).reshape(-1,1)), axis=1)
             chunk_pred_val = np.concatenate((np.transpose(valid_custom), np.char.upper(chunkp_v).reshape(-1,1)), axis=1)
             chunk_pred_c = np.concatenate((np.transpose(combined), np.char.upper(chunkp_c).reshape(-1,1)), axis=1)

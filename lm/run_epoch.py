@@ -61,8 +61,6 @@ def run_epoch(session, m, words, pos, chunk, pos_vocab_size, chunk_vocab_size, v
             else:
                 eval_op = m.joint_op
 
-        if len(y_lm) == 280:
-            pdb.set_trace()
 
         joint_loss, _, pos_int_pred, chunk_int_pred, lm_int_pred, pos_int_true, \
             chunk_int_true, lm_int_true, pos_loss, chunk_loss, lm_loss = \
