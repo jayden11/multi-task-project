@@ -19,7 +19,7 @@ from graph import Shared_Model
 
 import saveload
 
-def run_epoch(session, m, words, pos, chunk, pos_vocab_size, chunk_vocab_size, vocab_size, max_length,
+def run_epoch(session, m, words, pos, chunk, pos_vocab_size, chunk_vocab_size, vocab_size, num_steps,
               verbose=False, valid=False, model_type='JOINT'):
     """Runs the model on the given data."""
     epoch_size = ((len(words) // m.batch_size) + 1)
@@ -38,7 +38,7 @@ def run_epoch(session, m, words, pos, chunk, pos_vocab_size, chunk_vocab_size, v
     lm_true = []
 
     for step, (x, y_pos, y_chunk, y_lm, sentence_lengths) in enumerate(reader.create_batches(words, pos, chunk, m.batch_size,
-                                               m.num_steps, pos_vocab_size, chunk_vocab_size, vocab_size, max_length)):
+                                               m.num_steps, pos_vocab_size, chunk_vocab_size, vocab_size)):
 
         if model_type == 'POS':
             if valid:

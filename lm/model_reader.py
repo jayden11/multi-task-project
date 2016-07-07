@@ -147,7 +147,7 @@ def _file_to_tag_classifications(filename, tag_to_id, col_val):
     return [tag_to_id[tag] for tag in data]
 
 
-def raw_x_y_data(data_path, ptb_data_path, embedding=False, embedding_path=None):
+def raw_x_y_data(data_path, ptb_data_path, num_steps, embedding=False, embedding_path=None):
     train = "train.txt"
     valid = "validation.txt"
     train_valid = "train_val_combined.txt"
@@ -203,12 +203,14 @@ def raw_x_y_data(data_path, ptb_data_path, embedding=False, embedding_path=None)
     sentences = [list(group) for k, group in itertools.groupby(list(zip(word_data_t,pos_data_t,chunk_data_t)),lambda x: x[0]==stop_id)]
     stop = sentences[1]
     sentences = [sentences[i] for i in range(len(sentences)) if i%2==0]
+    # add the stop tokens
     for s in sentences:
         s.append(stop[0])
     sentences = np.transpose([list(zip(*sentence)) for sentence in sentences])
-    word_data_t = sentences[0]
-    pos_data_t = sentences[1]
-    chunk_data_t = sentences[2]
+
+    word_data_t = split_sentences(sentences[0], num_steps)
+    pos_data_t = split_sentences(sentences[1], num_steps)
+    chunk_data_t = split_sentences(sentences[2], num_steps)
 
     ptb_word_data = _file_to_word_ids(ptb_path, word_to_id, ptb=True)
     ptb_pos_data = _file_to_tag_classifications(ptb_path, pos_to_id, 1)
@@ -221,9 +223,9 @@ def raw_x_y_data(data_path, ptb_data_path, embedding=False, embedding_path=None)
         s.append(stop[0])
     sentences = np.transpose([list(zip(*sentence)) for sentence in sentences])
 
-    ptb_word_data = sentences[0]
-    ptb_pos_data = sentences[1]
-    ptb_chunk_data = sentences[2]
+    ptb_word_data = split_sentences(sentences[0], num_steps)
+    ptb_pos_data = split_sentences(sentences[1], num_steps)
+    ptb_chunk_data = split_sentences(sentences[2], num_steps)
 
     word_data_v = _file_to_word_ids(valid_path, word_to_id)
     pos_data_v = _file_to_tag_classifications(valid_path, pos_to_id, 1)
@@ -235,9 +237,10 @@ def raw_x_y_data(data_path, ptb_data_path, embedding=False, embedding_path=None)
     for s in sentences:
         s.append(stop[0])
     sentences = np.transpose([list(zip(*sentence)) for sentence in sentences])
-    word_data_v = sentences[0]
-    pos_data_v = sentences[1]
-    chunk_data_v = sentences[2]
+
+    word_data_v = split_sentences(sentences[0], num_steps)
+    pos_data_v = split_sentences(sentences[1], num_steps)
+    chunk_data_v = split_sentences(sentences[2], num_steps)
 
     word_data_c = _file_to_word_ids(train_valid_path, word_to_id)
     pos_data_c = _file_to_tag_classifications(train_valid_path, pos_to_id, 1)
@@ -249,9 +252,9 @@ def raw_x_y_data(data_path, ptb_data_path, embedding=False, embedding_path=None)
     for s in sentences:
         s.append(stop[0])
     sentences = np.transpose([list(zip(*sentence)) for sentence in sentences])
-    word_data_c = sentences[0]
-    pos_data_c = sentences[1]
-    chunk_data_c = sentences[2]
+    word_data_c = split_sentences(sentences[0], num_steps)
+    pos_data_c = split_sentences(sentences[1], num_steps)
+    chunk_data_c = split_sentences(sentences[2], num_steps)
 
     word_data_test = _file_to_word_ids(test_path, word_to_id)
     pos_data_test = _file_to_tag_classifications(test_path, pos_to_id, 1)
@@ -263,9 +266,9 @@ def raw_x_y_data(data_path, ptb_data_path, embedding=False, embedding_path=None)
     for s in sentences:
         s.append(stop[0])
     sentences = np.transpose([list(zip(*sentence)) for sentence in sentences])
-    word_data_test = sentences[0]
-    pos_data_test = sentences[1]
-    chunk_data_test = sentences[2]
+    word_data_test = split_sentences(sentences[0], num_steps)
+    pos_data_test = split_sentences(sentences[1], num_steps)
+    chunk_data_test = split_sentences(sentences[2], num_steps)
 
     return word_data_t, pos_data_t, chunk_data_t, word_data_v, \
         pos_data_v, chunk_data_v, word_to_id, pos_to_id, chunk_to_id, \
@@ -296,15 +299,15 @@ Yields
 
 
 def create_batches(raw_words, raw_pos, raw_chunk, batch_size, num_steps, pos_vocab_size,
-                   chunk_vocab_size, vocab_size, max_length, continuing=False):
+                   chunk_vocab_size, vocab_size, continuing=False):
     """Create those minibatches."""
 
-    def _reshape_and_pad(tokens, max_length):
+    def _reshape_and_pad(tokens, num_steps):
         sentence_lengths = [len(sentence) for sentence in tokens]
         sentences = []
         for sentence in tokens:
-            if len(sentence) < max_length:
-                sentences.append(np.pad(sentence,(0,max_length-len(sentence)),mode='constant', constant_values=0))
+            if len(sentence) < num_steps:
+                sentences.append(np.pad(sentence,(0,num_steps-len(sentence)),mode='constant', constant_values=0))
             else:
                 sentences.append(sentence)
         return sentences, sentence_lengths
@@ -316,9 +319,9 @@ def create_batches(raw_words, raw_pos, raw_chunk, batch_size, num_steps, pos_voc
     """
     1.1 Split the tokens at the full stops
     """
-    word_data, sentence_lengths = _reshape_and_pad(raw_words,  max_length)
-    pos_data, _ = _reshape_and_pad(raw_pos, max_length)
-    chunk_data, _ = _reshape_and_pad(raw_chunk, max_length)
+    word_data, sentence_lengths = _reshape_and_pad(raw_words,  num_steps)
+    pos_data, _ = _reshape_and_pad(raw_pos, num_steps)
+    chunk_data, _ = _reshape_and_pad(raw_chunk, num_steps)
 
     """
     3. Do the epoch thing and iterate
@@ -330,7 +333,7 @@ def create_batches(raw_words, raw_pos, raw_chunk, batch_size, num_steps, pos_voc
 
     additional_sentences_required = batch_size - (data_len % batch_size)
 
-    additional_sentences = np.zeros((additional_sentences_required,max_length))
+    additional_sentences = np.zeros((additional_sentences_required,num_steps))
 
     word_data = np.vstack((word_data, additional_sentences))
     pos_data = np.vstack((pos_data, additional_sentences))
@@ -400,3 +403,21 @@ def replace_eos_ptb(token):
         return "."
     else:
         return token
+
+def split_sentences(sentences, num_steps):
+    exp_sentences = []
+    # limit length of sentence
+    for sentence in sentences:
+        if len(sentence) > num_steps:
+            num_tmp_sentences = (len(sentence) // num_steps)
+            if num_tmp_sentences % num_steps == 0:
+                num_tmp_sentences -= 1
+            splits = list(map(lambda x: (x+1)*num_steps, range(num_tmp_sentences)))
+            tmp_sentences = np.split(sentence, splits)
+            for s in tmp_sentences:
+                if len(s) != 0:
+                    exp_sentences.append(s.tolist())
+        else:
+            exp_sentences.append(list(sentence))
+
+    return exp_sentences

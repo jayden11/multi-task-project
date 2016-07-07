@@ -21,7 +21,7 @@ import saveload
 
 
 def run_epoch(session, m, conll_words, ptb_words, pos, ptb_pos, chunk, ptb_chunk, pos_vocab_size,
-            chunk_vocab_size, vocab_size, max_length, verbose=False, valid=False, model_type='JOINT'):
+            chunk_vocab_size, vocab_size, num_steps, verbose=False, valid=False, model_type='JOINT'):
     """Runs the model on the given data."""
     # =====================================
     # Initialise variables
@@ -47,12 +47,12 @@ def run_epoch(session, m, conll_words, ptb_words, pos, ptb_pos, chunk, ptb_chunk
     print('creating batches')
 
     conll_batches = reader.create_batches(conll_words, pos, chunk, m.batch_size,
-                            m.num_steps, pos_vocab_size, chunk_vocab_size, vocab_size, max_length, continuing=True)
+                            m.num_steps, pos_vocab_size, chunk_vocab_size, vocab_size, continuing=True)
 
     conll_iter = 0
 
     ptb_batches = reader.create_batches(ptb_words, ptb_pos, ptb_chunk, m.batch_size,
-                            m.num_steps, pos_vocab_size, chunk_vocab_size, vocab_size, max_length, continuing=True)
+                            m.num_steps, pos_vocab_size, chunk_vocab_size, vocab_size, continuing=True)
     ptb_iter = 0
 
     # =======================================================
@@ -134,13 +134,13 @@ def run_epoch(session, m, conll_words, ptb_words, pos, ptb_pos, chunk, ptb_chunk
                 epoch_stats = train_batch(next(conll_batches), \
                     eval_op, "JOINT", epoch_stats, (conll_iter > conll_epoch_size))
                 conll_iter +=1
-                print('conll iter: ' + str(conll_iter))
+                # print('conll iter: ' + str(conll_iter))
             else:
                 eval_op = m.lm_op
                 epoch_stats = train_batch(next(ptb_batches), \
                     eval_op, "LM", epoch_stats)
                 ptb_iter += 1
-                print('ptb iter: ' + str(ptb_iter))
+                # print('ptb iter: ' + str(ptb_iter))
 
     return (epoch_stats["comb_loss"] / epoch_stats["iters"]), \
         epoch_stats["pos_predictions"], epoch_stats["chunk_predictions"], \
