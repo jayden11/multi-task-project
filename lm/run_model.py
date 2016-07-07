@@ -57,7 +57,7 @@ def main(model_type, dataset_path, ptb_path, save_path,
 
     raw_data_path = dataset_path + '/data'
     raw_data = reader.raw_x_y_data(
-        raw_data_path, config.num_steps, ptb_path + '/data', embedding, glove_path)
+        raw_data_path, ptb_path + '/data', embedding, glove_path)
 
     words_t, pos_t, chunk_t, words_v, \
         pos_v, chunk_v, word_to_id, pos_to_id, \
@@ -68,37 +68,57 @@ def main(model_type, dataset_path, ptb_path, save_path,
     num_chunk_tags = len(chunk_to_id)
     vocab_size = len(word_to_id)
 
+    train_lengths = [len(s) for s in words_t]
+    validation_lengths = [len(s) for s in words_v]
+    test_lengths = [len(s) for s in words_test]
+    ptb_lengths = [len(s) for s in words_ptb]
+    combined_lengths = [len(s) for s in words_c]
+
+    max_length = np.max([np.max([len(s) for s in words_t]),
+                        np.max([len(s) for s in words_ptb]),
+                        np.max([len(s) for s in words_v]),
+                        np.max([len(s) for s in words_test])])
+
+    print('constructing word embedding')
+
     if embedding==True:
         word_embedding = np.float32(word_embedding)
     else:
-        pdb.set_trace()
         word_embedding = np.float32((np.random.rand(vocab_size, config.word_embedding_size)-0.5)*config.init_scale)
 
+
     with tf.Graph().as_default(), tf.Session() as session:
+        print('building models')
         initializer = tf.random_uniform_initializer(-config.init_scale,
                                                     config.init_scale)
 
         # model to train hyperparameters on
         with tf.variable_scope("hyp_model", reuse=None, initializer=initializer):
             m = Shared_Model(is_training=True, config=config, num_pos_tags=num_pos_tags,
-            num_chunk_tags=num_chunk_tags, vocab_size=vocab_size, word_embedding=word_embedding)
+            num_chunk_tags=num_chunk_tags, vocab_size=vocab_size, num_steps=max_length)
 
         with tf.variable_scope("hyp_model", reuse=True, initializer=initializer):
             mValid = Shared_Model(is_training=False, config=config, num_pos_tags=num_pos_tags,
-            num_chunk_tags=num_chunk_tags, vocab_size=vocab_size, word_embedding=word_embedding)
+            num_chunk_tags=num_chunk_tags, vocab_size=vocab_size, num_steps=max_length)
 
         # model that trains, given hyper-parameters
         with tf.variable_scope("final_model", reuse=None, initializer=initializer):
             mTrain = Shared_Model(is_training=True, config=config, num_pos_tags=num_pos_tags,
-            num_chunk_tags=num_chunk_tags, vocab_size=vocab_size, word_embedding=word_embedding)
+            num_chunk_tags=num_chunk_tags, vocab_size=vocab_size, num_steps=max_length)
 
         with tf.variable_scope("final_model", reuse=True, initializer=initializer):
             mTest = Shared_Model(is_training=False, config=config, num_pos_tags=num_pos_tags,
-            num_chunk_tags=num_chunk_tags, vocab_size=vocab_size, word_embedding=word_embedding)
+            num_chunk_tags=num_chunk_tags, vocab_size=vocab_size, num_steps=max_length)
+
+        print('initialising most variables')
 
         tf.initialize_all_variables().run()
 
-
+        print('initialising word embeddings')
+        session.run(m.embedding_init, feed_dict={m.embedding_placeholder: word_embedding})
+        session.run(mValid.embedding_init, feed_dict={mValid.embedding_placeholder: word_embedding})
+        session.run(mTrain.embedding_init, feed_dict={mTrain.embedding_placeholder: word_embedding})
+        session.run(mTest.embedding_init, feed_dict={mTest.embedding_placeholder: word_embedding})
 
         # Create an empty array to hold [epoch number, loss]
         best_epoch = [0, 0.0]
@@ -142,21 +162,21 @@ def main(model_type, dataset_path, ptb_path, save_path,
                         _, _, _, _, _, _, _, _, _, _ = \
                             run_epoch(session, m,
                                       words_ptb, pos_ptb, chunk_ptb,
-                                      num_pos_tags, num_chunk_tags, vocab_size,
+                                      num_pos_tags, num_chunk_tags, vocab_size, max_length,
                                       verbose=True, model_type='LM')
 
                     print(len(words_t))
                     mean_loss, posp_t, chunkp_t, lmp_t, post_t, chunkt_t, lmt_t, pos_loss, chunk_loss, lm_loss = \
                         run_epoch(session, m,
                                   words_t, pos_t, chunk_t,
-                                  num_pos_tags, num_chunk_tags, vocab_size,
+                                  num_pos_tags, num_chunk_tags, vocab_size, max_length,
                                   verbose=True, model_type=model_type)
 
                 else:
                     mean_loss, posp_t, chunkp_t, lmp_t, post_t, chunkt_t, lmt_t, pos_loss, chunk_loss, lm_loss = \
                         run_epoch_random.run_epoch(session, m,
                                   words_t, words_ptb, pos_t, pos_ptb, chunk_t, chunk_ptb,
-                                  num_pos_tags, num_chunk_tags, vocab_size,
+                                  num_pos_tags, num_chunk_tags, vocab_size, max_length,
                                   verbose=True, model_type=model_type)
             else:
                 if config.random_mix == False:
@@ -164,21 +184,21 @@ def main(model_type, dataset_path, ptb_path, save_path,
                         _, _, _, _, _, _, _, _, _, _ = \
                             run_epoch(session, m,
                                       words_ptb, pos_ptb, chunk_ptb,
-                                      num_pos_tags, num_chunk_tags, vocab_size,
+                                      num_pos_tags, num_chunk_tags, vocab_size, max_length,
                                       verbose=True, model_type='LM')
 
 
                     mean_loss, posp_t, chunkp_t, lmp_t, post_t, chunkt_t, lmt_t, pos_loss, chunk_loss, lm_loss = \
                         run_epoch(session, m,
                                   words_t, pos_t, chunk_t,
-                                  num_pos_tags, num_chunk_tags, vocab_size,
+                                  num_pos_tags, num_chunk_tags, vocab_size, max_length,
                                   verbose=True, model_type=model_type)
 
                 else:
                     mean_loss, posp_t, chunkp_t, lmp_t, post_t, chunkt_t, lmt_t, pos_loss, chunk_loss, lm_loss = \
                         run_epoch_random.run_epoch(session, m,
                                   words_t, words_ptb, pos_t, pos_ptb, chunk_t, chunk_ptb,
-                                  num_pos_tags, num_chunk_tags, vocab_size,
+                                  num_pos_tags, num_chunk_tags, vocab_size, max_length,
                                   verbose=True, model_type=model_type)
 
 
@@ -207,7 +227,7 @@ def main(model_type, dataset_path, ptb_path, save_path,
 
             valid_loss, posp_v, chunkp_v, lmp_v, post_v, chunkt_v, lmt_v, pos_v_loss, chunk_v_loss, lm_v_loss = \
                 run_epoch(session, mValid, words_v, pos_v, chunk_v,
-                          num_pos_tags, num_chunk_tags, vocab_size,
+                          num_pos_tags, num_chunk_tags, vocab_size, max_length,
                           verbose=True, valid=True, model_type=model_type)
 
             # Save loss for charts
@@ -240,33 +260,33 @@ def main(model_type, dataset_path, ptb_path, save_path,
 
 
         # get training predictions as list
-        posp_t = reader._res_to_list(posp_t, config.batch_size, config.num_steps,
-                                     pos_to_id, len(words_t), to_str=True)
+        posp_t = reader._res_to_list(posp_t, config.batch_size,
+                                     pos_to_id, len(words_t), train_lengths,  to_str=True)
         chunkp_t = reader._res_to_list(chunkp_t, config.batch_size,
-                                       config.num_steps, chunk_to_id, len(words_t), to_str=True)
+                                       chunk_to_id, len(words_t), train_lengths, to_str=True)
         lmp_t = reader._res_to_list(lmp_t, config.batch_size,
-                                        config.num_steps, word_to_id, len(words_t), to_str=True)
-        post_t = reader._res_to_list(post_t, config.batch_size, config.num_steps,
-                                     pos_to_id, len(words_t), to_str=True)
+                                         word_to_id, len(words_t), train_lengths, to_str=True)
+        post_t = reader._res_to_list(post_t, config.batch_size,
+                                     pos_to_id, len(words_t), train_lengths, to_str=True)
         chunkt_t = reader._res_to_list(chunkt_t, config.batch_size,
-                                       config.num_steps, chunk_to_id, len(words_t), to_str=True)
+                                        chunk_to_id, len(words_t), train_lengths, to_str=True)
         lmt_t = reader._res_to_list(lmt_t, config.batch_size,
-                                        config.num_steps, word_to_id, len(words_t), to_str=True)
+                                         word_to_id, len(words_t), train_lengths, to_str=True)
 
 
         # get predictions as list
-        posp_v = reader._res_to_list(posp_v, config.batch_size, config.num_steps,
-                                     pos_to_id, len(words_v), to_str=True)
+        posp_v = reader._res_to_list(posp_v, config.batch_size,
+                                     pos_to_id, len(words_v), validation_lengths, to_str=True)
         chunkp_v = reader._res_to_list(chunkp_v, config.batch_size,
-                                       config.num_steps, chunk_to_id, len(words_v), to_str=True)
+                                        chunk_to_id, len(words_v), validation_lengths, to_str=True)
         lmp_v = reader._res_to_list(lmp_v, config.batch_size,
-                                       config.num_steps, word_to_id, len(words_v), to_str=True)
+                                        word_to_id, len(words_v), validation_lengths, to_str=True)
         chunkt_v = reader._res_to_list(chunkt_v, config.batch_size,
-                                       config.num_steps, chunk_to_id, len(words_v), to_str=True)
-        post_v = reader._res_to_list(post_v, config.batch_size, config.num_steps,
-                                     pos_to_id, len(words_v), to_str=True)
+                                        chunk_to_id, len(words_v), validation_lengths, to_str=True)
+        post_v = reader._res_to_list(post_v, config.batch_size,
+                                     pos_to_id, len(words_v), validation_lengths, to_str=True)
         lmt_v = reader._res_to_list(lmt_v, config.batch_size,
-                                       config.num_steps, word_to_id, len(words_v), to_str=True)
+                                        word_to_id, len(words_v), validation_lengths, to_str=True)
         # Save loss & accuracy plots
         if write_to_file == True:
             np.savetxt(save_path + '/loss/valid_loss_stats.txt', valid_loss_stats)
@@ -296,7 +316,7 @@ def main(model_type, dataset_path, ptb_path, save_path,
                         _, _, _, _, _, _, _, _, _, _ = \
                             run_epoch(session, mTrain,
                                       words_ptb, pos_ptb, chunk_ptb,
-                                      num_pos_tags, num_chunk_tags, vocab_size,
+                                      num_pos_tags, num_chunk_tags, vocab_size, max_length,
                                       verbose=True, model_type="LM")
 
                     _, posp_c, chunkp_c, _, _, _, _, _, _, _ = \
@@ -312,7 +332,7 @@ def main(model_type, dataset_path, ptb_path, save_path,
                     _, posp_c, chunkp_c, _, _, _, _, _, _, _ = \
                         run_epoch_random.run_epoch(session, mTrain,
                                   words_c, words_ptb, pos_c, pos_ptb, chunk_c, chunk_ptb,
-                                  num_pos_tags, num_chunk_tags, vocab_size,
+                                  num_pos_tags, num_chunk_tags, vocab_size, max_length,
                                   verbose=True, model_type=model_type)
 
 
@@ -320,39 +340,39 @@ def main(model_type, dataset_path, ptb_path, save_path,
             _, posp_test, chunkp_test, _, _, _, _, _, _, _ = \
                 run_epoch(session, mTest,
                           words_test, pos_test, chunk_test,
-                          num_pos_tags, num_chunk_tags, vocab_size,
+                          num_pos_tags, num_chunk_tags, vocab_size, max_length,
                           verbose=True, valid=True, model_type=model_type)
 
 
             print('Writing Predictions')
             # prediction reshaping
-            posp_c = reader._res_to_list(posp_c, config.batch_size, config.num_steps,
-                                         pos_to_id, len(words_c),to_str=True)
-            posp_test = reader._res_to_list(posp_test, config.batch_size, config.num_steps,
-                                            pos_to_id, len(words_test),to_str=True)
+            posp_c = reader._res_to_list(posp_c, config.batch_size,
+                                         pos_to_id, len(words_c), combined_lengths, to_str=True)
+            posp_test = reader._res_to_list(posp_test, config.batch_size,
+                                            pos_to_id, len(words_test), test_lengths,to_str=True)
             chunkp_c = reader._res_to_list(chunkp_c, config.batch_size,
-                                           config.num_steps, chunk_to_id, len(words_c),to_str=True)
-            chunkp_test = reader._res_to_list(chunkp_test, config.batch_size, config.num_steps,
-                                              chunk_to_id, len(words_test), to_str=True)
+                                           chunk_to_id, len(words_c), combined_lengths,to_str=True)
+            chunkp_test = reader._res_to_list(chunkp_test, config.batch_size,
+                                              chunk_to_id, len(words_test), test_lengths, to_str=True)
 
             # save pickle - save_path + '/saved_variables.pkl'
             print('saving checkpoint')
             saveload.save(save_path + '/fin_model.ckpt', session)
 
-            train_custom = reader.read_tokens(raw_data_path + '/train.txt', 0,-1)
-            valid_custom = reader.read_tokens(raw_data_path + '/validation.txt',0, -1)
-            combined = reader.read_tokens(raw_data_path + '/train_val_combined.txt',0, -1)
-            test_data = reader.read_tokens(raw_data_path + '/test.txt',0, -1)
+            train_custom = reader.read_tokens(raw_data_path + '/train.txt', -1)
+            valid_custom = reader.read_tokens(raw_data_path + '/validation.txt',-1)
+            combined = reader.read_tokens(raw_data_path + '/train_val_combined.txt', -1)
+            test_data = reader.read_tokens(raw_data_path + '/test.txt',-1)
 
             print('loaded text')
-            chunk_pred_train = np.concatenate((np.transpose(train_custom), np.char.upper(chunkp_t)), axis=1)
-            chunk_pred_val = np.concatenate((np.transpose(valid_custom), np.char.upper(chunkp_v)), axis=1)
-            chunk_pred_c = np.concatenate((np.transpose(combined), np.char.upper(chunkp_c)), axis=1)
-            chunk_pred_test = np.concatenate((np.transpose(test_data), np.char.upper(chunkp_test)), axis=1)
-            pos_pred_train = np.concatenate((np.transpose(train_custom), np.char.upper(posp_t)), axis=1)
-            pos_pred_val = np.concatenate((np.transpose(valid_custom), np.char.upper(posp_v)), axis=1)
-            pos_pred_c = np.concatenate((np.transpose(combined), np.char.upper(posp_c)), axis=1)
-            pos_pred_test = np.concatenate((np.transpose(test_data), np.char.upper(posp_test)), axis=1)
+            chunk_pred_train = np.concatenate((np.transpose(train_custom), np.char.upper(chunkp_t[:len(train_custom[0])]).reshape(-1,1)), axis=1)
+            chunk_pred_val = np.concatenate((np.transpose(valid_custom), np.char.upper(chunkp_v).reshape(-1,1)), axis=1)
+            chunk_pred_c = np.concatenate((np.transpose(combined), np.char.upper(chunkp_c).reshape(-1,1)), axis=1)
+            chunk_pred_test = np.concatenate((np.transpose(test_data), np.char.upper(chunkp_test).reshape(-1,1)), axis=1)
+            pos_pred_train = np.concatenate((np.transpose(train_custom), np.char.upper(posp_t[:len(train_custom[0])]).reshape(-1,1)), axis=1)
+            pos_pred_val = np.concatenate((np.transpose(valid_custom), np.char.upper(posp_v).reshape(-1,1)), axis=1)
+            pos_pred_c = np.concatenate((np.transpose(combined), np.char.upper(posp_c).reshape(-1,1)), axis=1)
+            pos_pred_test = np.concatenate((np.transpose(test_data), np.char.upper(posp_test).reshape(-1,1)), axis=1)
 
             print('finished concatenating, about to start saving')
 
