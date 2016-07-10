@@ -22,4 +22,5 @@ python3 run_model.py --model_type "JOINT" \
                      --mix_percent 0.5 \
                      --write_to_file 1 \
                      --embedding 1 \
-                     --max_epoch 1
+                     --max_epoch 1 \
+		     --test 1
