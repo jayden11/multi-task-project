@@ -382,12 +382,12 @@ def main(model_type, dataset_path, ptb_path, save_path,
             if test==False:
                 chunk_pred_train = np.concatenate((np.transpose(train_custom), np.char.upper(chunkp_t[:len(train_custom[0])]).reshape(-1,1)), axis=1)
                 chunk_pred_val = np.concatenate((np.transpose(valid_custom), np.char.upper(chunkp_v).reshape(-1,1)), axis=1)
-            chunk_pred_c = np.concatenate((np.transpose(combined), np.char.upper(chunkp_c).reshape(-1,1)), axis=1)
+            # chunk_pred_c = np.concatenate((np.transpose(combined), np.char.upper(chunkp_c).reshape(-1,1)), axis=1)
             chunk_pred_test = np.concatenate((np.transpose(test_data), np.char.upper(chunkp_test).reshape(-1,1)), axis=1)
             if test==False:
                 pos_pred_train = np.concatenate((np.transpose(train_custom), np.char.upper(posp_t[:len(train_custom[0])]).reshape(-1,1)), axis=1)
                 pos_pred_val = np.concatenate((np.transpose(valid_custom), np.char.upper(posp_v).reshape(-1,1)), axis=1)
-            pos_pred_c = np.concatenate((np.transpose(combined), np.char.upper(posp_c).reshape(-1,1)), axis=1)
+            # pos_pred_c = np.concatenate((np.transpose(combined), np.char.upper(posp_c).reshape(-1,1)), axis=1)
             pos_pred_test = np.concatenate((np.transpose(test_data), np.char.upper(posp_test).reshape(-1,1)), axis=1)
 
             print('finished concatenating, about to start saving')
