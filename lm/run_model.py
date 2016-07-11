@@ -399,8 +399,8 @@ def main(model_type, dataset_path, ptb_path, save_path,
                 np.savetxt(save_path + '/predictions/chunk_pred_val.txt',
                            chunk_pred_val, fmt='%s')
                 print('writing to ' + save_path + '/predictions/chunk_pred_val.txt')
-            np.savetxt(save_path + '/predictions/chunk_pred_combined.txt',
-                       chunk_pred_c, fmt='%s')
+            # np.savetxt(save_path + '/predictions/chunk_pred_combined.txt',
+            #            chunk_pred_c, fmt='%s')
             print('writing to ' + save_path + '/predictions/chunk_pred_combined.txt')
             np.savetxt(save_path + '/predictions/chunk_pred_test.txt',
                        chunk_pred_test, fmt='%s')
@@ -412,8 +412,8 @@ def main(model_type, dataset_path, ptb_path, save_path,
                 np.savetxt(save_path + '/predictions/pos_pred_val.txt',
                            pos_pred_val, fmt='%s')
                 print('writing to ' + save_path + '/predictions/pos_pred_val.txt')
-            np.savetxt(save_path + '/predictions/pos_pred_combined.txt',
-                       pos_pred_c, fmt='%s')
+            # np.savetxt(save_path + '/predictions/pos_pred_combined.txt',
+            #            pos_pred_c, fmt='%s')
             np.savetxt(save_path + '/predictions/pos_pred_test.txt',
                        pos_pred_test, fmt='%s')
 
