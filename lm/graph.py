@@ -435,7 +435,7 @@ class Shared_Model(object):
 
         inputs = tf.nn.embedding_lookup(word_embedding, self.input_data)
 
-        word_embedding_w = tf.get_variable("word_embedding_w", [batch_size, word_embedding_size, 100])
+        word_embedding_w = tf.get_variable("word_embedding_w", [batch_size, word_embedding_size, 300])
 
         inputs = tf.batch_matmul(inputs,word_embedding_w)
         inputs = tf.tanh(inputs)
