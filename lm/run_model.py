@@ -14,6 +14,7 @@ import argparse
 import saveload
 import run_epoch_random
 import time
+import sklearn
 
 
 class Config(object):
@@ -130,7 +131,6 @@ def main(model_type, dataset_path, ptb_path, save_path,
             # Create empty vectors for accuracy
             train_pos_stats = np.array([])
             train_chunk_stats = np.array([])
-            train_lm_stats = np.array([])
 
             # ====================================
             # Create vectors for validation results
@@ -144,7 +144,6 @@ def main(model_type, dataset_path, ptb_path, save_path,
             # Create empty vectors for accuracy
             valid_pos_stats = np.array([])
             valid_chunk_stats = np.array([])
-            valid_lm_stats = np.array([])
 
             for i in range(config.max_epoch):
 
@@ -202,21 +201,32 @@ def main(model_type, dataset_path, ptb_path, save_path,
                 train_chunk_loss_stats = np.append(train_chunk_loss_stats, chunk_loss)
                 train_lm_loss_stats = np.append(train_lm_loss_stats, lm_loss)
 
+                # get training predictions as list
+                posp_t = reader._res_to_list(posp_t, config.batch_size,
+                                             pos_to_id, len(words_t), train_lengths,  to_str=True)
+                chunkp_t = reader._res_to_list(chunkp_t, config.batch_size,
+                                               chunk_to_id, len(words_t), train_lengths, to_str=True)
+                lmp_t = reader._res_to_list(lmp_t, config.batch_size,
+                                                 word_to_id, len(words_t), train_lengths, to_str=True)
+                post_t = reader._res_to_list(post_t, config.batch_size,
+                                             pos_to_id, len(words_t), train_lengths, to_str=True)
+                chunkt_t = reader._res_to_list(chunkt_t, config.batch_size,
+                                                chunk_to_id, len(words_t), train_lengths, to_str=True)
+                lmt_t = reader._res_to_list(lmt_t, config.batch_size,
+                                                 word_to_id, len(words_t), train_lengths, to_str=True)
+
                 # find the accuracy
                 print('finding accuracy')
-                pos_acc = np.sum(np.array(posp_t).flatten() == np.array(post_t).flatten())/float(len(np.array(posp_t).flatten()))
-                chunk_acc = np.sum(np.array(chunkp_t).flatten() == np.array(chunkt_t).flatten())/float(len(np.array(chunkp_t).flatten()))
-                lm_acc = np.sum(np.array(lmp_t).flatten() == np.array(lmt_t).flatten())/float(len(np.array(lmp_t).flatten()))
-
+                pos_acc = np.sum(posp_t==post_t)/float(len(posp_t))
+                chunk_F1 = sklearn.metrics.f1_score(chunkt_t, chunkp_t)
 
                 # add to array
                 train_pos_stats = np.append(train_pos_stats, pos_acc)
-                train_chunk_stats = np.append(train_chunk_stats, chunk_acc)
-                train_lm_stats = np.append(train_lm_stats, lm_acc)
+                train_chunk_stats = np.append(train_chunk_stats, chunk_F1)
 
                 # print for tracking
                 print("Pos Training Accuracy After Epoch %d :  %3f" % (i+1, pos_acc))
-                print("Chunk Training Accuracy After Epoch %d : %3f" % (i+1, chunk_acc))
+                print("Chunk Training Accuracy After Epoch %d : %3f" % (i+1, chunk_F1))
 
                 valid_loss, posp_v, chunkp_v, lmp_v, post_v, chunkt_v, lmt_v, pos_v_loss, chunk_v_loss, lm_v_loss = \
                     run_epoch(session, mValid, words_v, pos_v, chunk_v,
@@ -245,39 +255,24 @@ def main(model_type, dataset_path, ptb_path, save_path,
 
                 # find accuracy
                 pos_acc = np.sum(posp_v==post_v)/float(len(posp_v))
-                chunk_acc = np.sum(chunkp_v==chunkt_v)/float(len(chunkp_v))
+                chunk_F1 = sklearn.metrics.f1_score(chunkt_v, chunkp_v)
+
 
                 print("Pos Validation Accuracy After Epoch %d :  %3f" % (i+1, pos_acc))
-                print("Chunk Validation Accuracy After Epoch %d : %3f" % (i+1, chunk_acc))
+                print("Chunk Validation F1 After Epoch %d : %3f" % (i+1, chunk_F1))
 
                 # add to stats
                 valid_pos_stats = np.append(valid_pos_stats, pos_acc)
-                valid_chunk_stats = np.append(valid_chunk_stats, chunk_acc)
-                valid_lm_stats = np.append(valid_lm_stats, lm_acc)
+                valid_chunk_stats = np.append(valid_chunk_stats, chunk_F1)
 
                 # update best parameters
-                if(chunk_acc > best_epoch[1]):
-                    best_epoch = [i+1, chunk_acc]
+                if(chunk_F1 > best_epoch[1]):
+                    best_epoch = [i+1, chunk_F1]
 
                 if write_to_file ==True:
                     saveload.save(save_path + '/val_model.pkl', session)
                     #model_save_path = saver.save(session, save_path + '/val_model.ckpt')
                     print("Model saved in file: %s" % save_path)
-
-
-            # get training predictions as list
-            posp_t = reader._res_to_list(posp_t, config.batch_size,
-                                         pos_to_id, len(words_t), train_lengths,  to_str=True)
-            chunkp_t = reader._res_to_list(chunkp_t, config.batch_size,
-                                           chunk_to_id, len(words_t), train_lengths, to_str=True)
-            lmp_t = reader._res_to_list(lmp_t, config.batch_size,
-                                             word_to_id, len(words_t), train_lengths, to_str=True)
-            post_t = reader._res_to_list(post_t, config.batch_size,
-                                         pos_to_id, len(words_t), train_lengths, to_str=True)
-            chunkt_t = reader._res_to_list(chunkt_t, config.batch_size,
-                                            chunk_to_id, len(words_t), train_lengths, to_str=True)
-            lmt_t = reader._res_to_list(lmt_t, config.batch_size,
-                                             word_to_id, len(words_t), train_lengths, to_str=True)
 
 
 
@@ -286,18 +281,14 @@ def main(model_type, dataset_path, ptb_path, save_path,
                 np.savetxt(save_path + '/loss/valid_loss_stats.txt', valid_loss_stats)
                 np.savetxt(save_path + '/loss/valid_pos_loss_stats.txt', valid_pos_loss_stats)
                 np.savetxt(save_path + '/loss/valid_chunk_loss_stats.txt', valid_chunk_loss_stats)
-                np.savetxt(save_path + '/loss/valid_lm_loss_stats.txt', valid_lm_loss_stats)
                 np.savetxt(save_path + '/accuracy/valid_pos_stats.txt', valid_pos_stats)
                 np.savetxt(save_path + '/accuracy/valid_chunk_stats.txt', valid_chunk_stats)
-                np.savetxt(save_path + '/accuracy/valid_lm_stats.txt', valid_chunk_stats)
 
                 np.savetxt(save_path + '/loss/train_loss_stats.txt', train_loss_stats)
                 np.savetxt(save_path + '/loss/train_pos_loss_stats.txt', train_pos_loss_stats)
                 np.savetxt(save_path + '/loss/train_chunk_loss_stats.txt', train_chunk_loss_stats)
-                np.savetxt(save_path + '/loss/train_lm_loss_stats.txt', train_lm_loss_stats)
                 np.savetxt(save_path + '/accuracy/train_pos_stats.txt', train_pos_stats)
                 np.savetxt(save_path + '/accuracy/train_chunk_stats.txt', train_chunk_stats)
-                np.savetxt(save_path + '/accuracy/train_lm_stats.txt', train_lm_stats)
                 # model that trains, given hyper-parameters
 
     with tf.Graph().as_default(), tf.Session() as session:
@@ -388,6 +379,14 @@ def main(model_type, dataset_path, ptb_path, save_path,
             words_v = [id_to_word[k] for k in np.concatenate(words_v)]
             words_c = [id_to_word[k] for k in np.concatenate(words_c)]
             words_test = [id_to_word[k] for k in np.concatenate(words_test)]
+
+            # find the accuracy
+            print('finding  test accuracy')
+            pos_acc = np.sum(posp_test==post_test)/float(len(posp_test))
+            chunk_F1 = sklearn.metrics.f1_score(chunkt_test, chunkp_test)
+
+            print("POS Test Accuracy: " + str(pos_acc))
+            print("Chunk Test Acccuracy: " + str(chunk_F1))
 
             if test==False:
                 train_custom = [words_t, np.char.upper(post_t), np.char.upper(chunkt_t)]
