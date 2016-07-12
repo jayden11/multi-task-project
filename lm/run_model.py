@@ -229,10 +229,23 @@ def main(model_type, dataset_path, ptb_path, save_path,
                 valid_chunk_loss_stats = np.append(valid_chunk_loss_stats, chunk_v_loss)
                 valid_lm_loss_stats = np.append(valid_lm_loss_stats, lm_v_loss)
 
+                # get predictions as list
+                posp_v = reader._res_to_list(posp_v, config.batch_size,
+                                             pos_to_id, len(words_v), validation_lengths, to_str=True)
+                chunkp_v = reader._res_to_list(chunkp_v, config.batch_size,
+                                                chunk_to_id, len(words_v), validation_lengths, to_str=True)
+                lmp_v = reader._res_to_list(lmp_v, config.batch_size,
+                                                word_to_id, len(words_v), validation_lengths, to_str=True)
+                chunkt_v = reader._res_to_list(chunkt_v, config.batch_size,
+                                                chunk_to_id, len(words_v), validation_lengths, to_str=True)
+                post_v = reader._res_to_list(post_v, config.batch_size,
+                                             pos_to_id, len(words_v), validation_lengths, to_str=True)
+                lmt_v = reader._res_to_list(lmt_v, config.batch_size,
+                                                word_to_id, len(words_v), validation_lengths, to_str=True)
+
                 # find accuracy
-                pos_acc = np.sum(np.array(posp_v).flatten() == np.array(post_v).flatten())/float(len(np.array(posp_v).flatten()))
-                chunk_acc = np.sum(np.array(chunkp_v).flatten() == np.array(chunkt_v).flatten())/float(len(np.array(chunkp_v).flatten()))
-                lm_acc = np.sum(np.array(lmp_v).flatten() == np.array(lmt_v).flatten())/float(len(np.array(lmp_v).flatten()))
+                pos_acc = np.sum(posp_v==post_v)/float(len(posp_v))
+                chunk_acc = np.sum(chunkp_v==chunkt_v)/float(len(chunkp_v))
 
                 print("Pos Validation Accuracy After Epoch %d :  %3f" % (i+1, pos_acc))
                 print("Chunk Validation Accuracy After Epoch %d : %3f" % (i+1, chunk_acc))
@@ -267,19 +280,7 @@ def main(model_type, dataset_path, ptb_path, save_path,
                                              word_to_id, len(words_t), train_lengths, to_str=True)
 
 
-            # get predictions as list
-            posp_v = reader._res_to_list(posp_v, config.batch_size,
-                                         pos_to_id, len(words_v), validation_lengths, to_str=True)
-            chunkp_v = reader._res_to_list(chunkp_v, config.batch_size,
-                                            chunk_to_id, len(words_v), validation_lengths, to_str=True)
-            lmp_v = reader._res_to_list(lmp_v, config.batch_size,
-                                            word_to_id, len(words_v), validation_lengths, to_str=True)
-            chunkt_v = reader._res_to_list(chunkt_v, config.batch_size,
-                                            chunk_to_id, len(words_v), validation_lengths, to_str=True)
-            post_v = reader._res_to_list(post_v, config.batch_size,
-                                         pos_to_id, len(words_v), validation_lengths, to_str=True)
-            lmt_v = reader._res_to_list(lmt_v, config.batch_size,
-                                            word_to_id, len(words_v), validation_lengths, to_str=True)
+
             # Save loss & accuracy plots
             if write_to_file == True:
                 np.savetxt(save_path + '/loss/valid_loss_stats.txt', valid_loss_stats)
@@ -342,7 +343,7 @@ def main(model_type, dataset_path, ptb_path, save_path,
                 print('Train Given Best Epoch Parameter :' + str(best_epoch[0]))
                 for i in range(best_epoch[0]):
                     print("Epoch: %d" % (i + 1))
-                    _, posp_c, chunkp_c, _, _, _, _, _, _, _ = \
+                    _, posp_c, chunkp_c, _, post_c, chunkt_c, _, _, _, _ = \
                         run_epoch_random.run_epoch(session, mTrain,
                                   words_c, words_ptb, pos_c, pos_ptb, chunk_c, chunk_ptb,
                                   num_pos_tags, num_chunk_tags, vocab_size, num_steps,
@@ -350,7 +351,7 @@ def main(model_type, dataset_path, ptb_path, save_path,
 
 
             print('Getting Testing Predictions')
-            _, posp_test, chunkp_test, _, _, _, _, _, _, _ = \
+            _, posp_test, chunkp_test, _, post_test, chunkt_test, _, _, _, _ = \
                 run_epoch(session, mTest,
                           words_test, pos_test, chunk_test,
                           num_pos_tags, num_chunk_tags, vocab_size, num_steps,
@@ -368,26 +369,43 @@ def main(model_type, dataset_path, ptb_path, save_path,
             chunkp_test = reader._res_to_list(chunkp_test, config.batch_size,
                                               chunk_to_id, len(words_test), test_lengths, to_str=True)
 
+            post_c = reader._res_to_list(post_c, config.batch_size,
+                                         pos_to_id, len(words_c), combined_lengths, to_str=True)
+            post_test = reader._res_to_list(post_test, config.batch_size,
+                                            pos_to_id, len(words_test), test_lengths,to_str=True)
+            chunkt_c = reader._res_to_list(chunkt_c, config.batch_size,
+                                           chunk_to_id, len(words_c), combined_lengths,to_str=True)
+            chunkt_test = reader._res_to_list(chunkt_test, config.batch_size,
+                                              chunk_to_id, len(words_test), test_lengths, to_str=True)
+
             # save pickle - save_path + '/saved_variables.pkl'
             print('saving checkpoint')
             saveload.save(save_path + '/fin_model.ckpt', session)
 
-            train_custom = reader.read_tokens(raw_data_path + '/train.txt', -1)
-            valid_custom = reader.read_tokens(raw_data_path + '/validation.txt',-1)
-            combined = reader.read_tokens(raw_data_path + '/train_val_combined.txt', -1)
-            test_data = reader.read_tokens(raw_data_path + '/test.txt',-1)
+            id_to_word = {v: k for k, v in word_to_id.items()}
+
+            words_t = [id_to_word[k] for k in np.concatenate(words_t)]
+            words_v = [id_to_word[k] for k in np.concatenate(words_v)]
+            words_c = [id_to_word[k] for k in np.concatenate(words_c)]
+            words_test = [id_to_word[k] for k in np.concatenate(words_test)]
+
+            if test==False:
+                train_custom = [words_t, np.char.upper(post_t), np.char.upper(chunkt_t)]
+                valid_custom = [words_v, np.char.upper(post_v), np.char.upper(chunkt_v)]
+            combined = [words_c, np.char.upper(post_c), np.char.upper(chunkt_c)]
+            test_data = [words_test, np.char.upper(post_test), np.char.upper(chunkt_test)]
 
             print('loaded text')
 
             if test==False:
-                chunk_pred_train = np.concatenate((np.transpose(train_custom), np.char.upper(chunkp_t[:len(train_custom[0])]).reshape(-1,1)), axis=1)
+                chunk_pred_train = np.concatenate((np.transpose(train_custom), np.char.upper(chunkp_t).reshape(-1,1)), axis=1)
                 chunk_pred_val = np.concatenate((np.transpose(valid_custom), np.char.upper(chunkp_v).reshape(-1,1)), axis=1)
-            # chunk_pred_c = np.concatenate((np.transpose(combined), np.char.upper(chunkp_c).reshape(-1,1)), axis=1)
+            chunk_pred_c = np.concatenate((np.transpose(combined), np.char.upper(chunkp_c).reshape(-1,1)), axis=1)
             chunk_pred_test = np.concatenate((np.transpose(test_data), np.char.upper(chunkp_test).reshape(-1,1)), axis=1)
             if test==False:
-                pos_pred_train = np.concatenate((np.transpose(train_custom), np.char.upper(posp_t[:len(train_custom[0])]).reshape(-1,1)), axis=1)
+                pos_pred_train = np.concatenate((np.transpose(train_custom), np.char.upper(posp_t).reshape(-1,1)), axis=1)
                 pos_pred_val = np.concatenate((np.transpose(valid_custom), np.char.upper(posp_v).reshape(-1,1)), axis=1)
-            # pos_pred_c = np.concatenate((np.transpose(combined), np.char.upper(posp_c).reshape(-1,1)), axis=1)
+            pos_pred_c = np.concatenate((np.transpose(combined), np.char.upper(posp_c).reshape(-1,1)), axis=1)
             pos_pred_test = np.concatenate((np.transpose(test_data), np.char.upper(posp_test).reshape(-1,1)), axis=1)
 
             print('finished concatenating, about to start saving')
@@ -399,12 +417,14 @@ def main(model_type, dataset_path, ptb_path, save_path,
                 np.savetxt(save_path + '/predictions/chunk_pred_val.txt',
                            chunk_pred_val, fmt='%s')
                 print('writing to ' + save_path + '/predictions/chunk_pred_val.txt')
-            # np.savetxt(save_path + '/predictions/chunk_pred_combined.txt',
-            #            chunk_pred_c, fmt='%s')
+
+            np.savetxt(save_path + '/predictions/chunk_pred_combined.txt',
+                       chunk_pred_c, fmt='%s')
             print('writing to ' + save_path + '/predictions/chunk_pred_combined.txt')
             np.savetxt(save_path + '/predictions/chunk_pred_test.txt',
                        chunk_pred_test, fmt='%s')
             print('writing to ' + save_path + '/predictions/chunk_pred_test.txt')
+
             if test == False:
                 np.savetxt(save_path + '/predictions/pos_pred_train.txt',
                            pos_pred_train, fmt='%s')
@@ -412,8 +432,9 @@ def main(model_type, dataset_path, ptb_path, save_path,
                 np.savetxt(save_path + '/predictions/pos_pred_val.txt',
                            pos_pred_val, fmt='%s')
                 print('writing to ' + save_path + '/predictions/pos_pred_val.txt')
-            # np.savetxt(save_path + '/predictions/pos_pred_combined.txt',
-            #            pos_pred_c, fmt='%s')
+
+            np.savetxt(save_path + '/predictions/pos_pred_combined.txt',
+                       pos_pred_c, fmt='%s')
             np.savetxt(save_path + '/predictions/pos_pred_test.txt',
                        pos_pred_test, fmt='%s')
 

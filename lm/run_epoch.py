@@ -95,14 +95,17 @@ def run_epoch(session, m, words, pos, chunk, pos_vocab_size, chunk_vocab_size, v
             print("Type: %s,cost: %3f, step: %3f" % (model_type, cost, step))
 
         pos_int_pred = np.reshape(pos_int_pred, [m.batch_size, m.num_steps])
+        pos_int_true = np.reshape(pos_int_true, [m.batch_size, m.num_steps])
         pos_predictions.append(pos_int_pred)
         pos_true.append(pos_int_true)
 
         chunk_int_pred = np.reshape(chunk_int_pred, [m.batch_size, m.num_steps])
+        chunk_int_true = np.reshape(chunk_int_true, [m.batch_size, m.num_steps])
         chunk_predictions.append(chunk_int_pred)
         chunk_true.append(chunk_int_true)
 
         lm_int_pred = np.reshape(lm_int_pred, [m.batch_size, m.num_steps])
+        lm_int_true = np.reshape(lm_int_true, [m.batch_size, m.num_steps])
         lm_predictions.append(lm_int_pred)
         lm_true.append(lm_int_true)
 
