@@ -136,7 +136,7 @@ def run_epoch(session, m, conll_words, ptb_words, pos, ptb_pos, chunk, ptb_chunk
                 conll_iter +=1
                 # print('conll iter: ' + str(conll_iter))
             else:
-                eval_op = m.auto_op
+                eval_op = m.joint_op
                 epoch_stats = train_batch(next(ptb_batches), \
                     eval_op, "LM", epoch_stats)
                 ptb_iter += 1
