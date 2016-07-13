@@ -424,18 +424,24 @@ class Shared_Model(object):
             train_op = optimizer.apply_gradients(zip(grads, tvars))
             return train_op
 
-        def _auto_encode_pos(logits,latent_state,num_pos_tags,latent_state_size):
-            auto_encode_pos_w = tf.get_variable("auto_encode_pos", [num_pos_tags, latent_state_size])
-            auto_encode_pos = tf.matmul(logits,auto_encode_pos_w)
+        def _auto_encode_pos(latent_state,num_pos_tags,latent_state_size):
+            auto_encode_pos_w1 = tf.get_variable("auto_encode_pos1", [latent_state_size, num_pos_tags])
+            auto_encode_pos_w2 = tf.get_variable("auto_encode_pos2", [num_pos_tags, latent_state_size])
+            auto_encode_pos = tf.matmul(latent_state,auto_encode_pos_w1)
+            auto_encode_pos = tf.nn.relu(auto_encode_pos)
+            auto_encode_pos = tf.matmul(auto_encode_pos, auto_encode_pos_w2)
             cross_entropy = tf.nn.softmax_cross_entropy_with_logits(auto_encode_pos,
                                                                     latent_state,
                                                                     name='auto_xentropy_pos')
             loss = tf.reduce_mean(cross_entropy, name='auto_xentropy_mean')
             return loss
 
-        def _auto_encode_chunk(logits,latent_state,num_chunk_tags,latent_state_size):
-            auto_encode_chunk_w = tf.get_variable("auto_encode_chunk", [num_chunk_tags, latent_state_size])
-            auto_encode_chunk = tf.matmul(logits,auto_encode_chunk_w)
+        def _auto_encode_chunk(latent_state,num_chunk_tags,latent_state_size):
+            auto_encode_chunk_w1 = tf.get_variable("auto_encode_chunk1", [latent_state_size, num_chunk_tags])
+            auto_encode_chunk_w2 = tf.get_variable("auto_encode_chunk2", [num_chunk_tags, latent_state_size])
+            auto_encode_chunk = tf.matmul(latent_state,auto_encode_chunk_w1)
+            auto_encode_chunk = tf.nn.relu(auto_encode_chunk)
+            auto_encode_chunk = tf.matmul(auto_encode_chunk, auto_encode_chunk_w2)
             cross_entropy = tf.nn.softmax_cross_entropy_with_logits(auto_encode_chunk,
                                                                     latent_state,
                                                                     name='auto_xentropy_chunk')
@@ -472,7 +478,7 @@ class Shared_Model(object):
 
         pos_logits, pos_hidden = _pos_private(encoding, config)
         pos_loss, pos_accuracy, pos_int_pred, pos_int_targ = _loss(pos_logits, self.pos_targets)
-        pos_auto_loss = _auto_encode_pos(pos_logits,pos_hidden,num_pos_tags,pos_decoder_size*2)
+        pos_auto_loss = _auto_encode_pos(pos_hidden,num_pos_tags,pos_decoder_size*2)
         self.pos_loss = pos_loss
 
         self.pos_int_pred = pos_int_pred
@@ -486,7 +492,7 @@ class Shared_Model(object):
 
         chunk_logits, chunk_hidden = _chunk_private(encoding, pos_to_chunk_embed, pos_hidden, config)
         chunk_loss, chunk_accuracy, chunk_int_pred, chunk_int_targ = _loss(chunk_logits, self.chunk_targets)
-        chunk_auto_loss = _auto_encode_chunk(chunk_logits,chunk_hidden,num_chunk_tags,chunk_decoder_size*2)
+        chunk_auto_loss = _auto_encode_chunk(chunk_hidden,num_chunk_tags,chunk_decoder_size*2)
 
         self.chunk_loss = chunk_loss
         self.chunk_int_pred = chunk_int_pred
