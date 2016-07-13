@@ -136,11 +136,15 @@ def run_epoch(session, m, conll_words, ptb_words, pos, ptb_pos, chunk, ptb_chunk
                 conll_iter +=1
                 # print('conll iter: ' + str(conll_iter))
             else:
-                eval_op = m.lm_op
+                eval_op = m.auto_op
                 epoch_stats = train_batch(next(ptb_batches), \
                     eval_op, "LM", epoch_stats)
                 ptb_iter += 1
                 # print('ptb iter: ' + str(ptb_iter))
+        eval_op = m.joint_op
+        epoch_stats = train_batch(next(conll_batches), \
+            eval_op, "JOINT", epoch_stats, (conll_iter > conll_epoch_size))
+        conll_iter +=1
 
     return (epoch_stats["comb_loss"] / epoch_stats["iters"]), \
         epoch_stats["pos_predictions"], epoch_stats["chunk_predictions"], \
