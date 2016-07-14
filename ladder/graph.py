@@ -430,17 +430,6 @@ class Shared_Model(object):
             train_op = optimizer.apply_gradients(zip(grads, tvars))
             return train_op
 
-        def _auto_encode_pos(latent_state,num_pos_tags,latent_state_size):
-            auto_encode_pos_w1 = tf.get_variable("auto_encode_pos1", [latent_state_size, num_pos_tags])
-            auto_encode_pos_w2 = tf.get_variable("auto_encode_pos2", [num_pos_tags, latent_state_size])
-            auto_encode_pos = tf.matmul(latent_state,auto_encode_pos_w1)
-            auto_encode_pos = tf.nn.relu(auto_encode_pos)
-            auto_encode_pos = tf.matmul(auto_encode_pos, auto_encode_pos_w2)
-            cross_entropy = tf.nn.softmax_cross_entropy_with_logits(auto_encode_pos,
-                                                                    latent_state,
-                                                                    name='auto_xentropy_pos')
-            loss = tf.reduce_mean(cross_entropy, name='auto_xentropy_mean')
-            return loss
 
         def _auto_encode_chunk(latent_state,num_chunk_tags,latent_state_size):
             auto_encode_chunk_w1 = tf.get_variable("auto_encode_chunk1", [latent_state_size, num_chunk_tags])
@@ -461,20 +450,24 @@ class Shared_Model(object):
         self.embedding_placeholder = embedding_placeholder = tf.placeholder(tf.float32, [vocab_size, word_embedding_size])
         self.embedding_init = word_embedding.assign(embedding_placeholder)
 
-        self.sentence_lengths = sentence_lengths =  tf.placeholder(tf.int32, [batch_size])
-
-        inputs = tf.nn.embedding_lookup(word_embedding, self.input_data)
-
         word_embedding_w = tf.get_variable("word_embedding_w", [batch_size, word_embedding_size, projection_size])
         word_embedding_b = tf.get_variable("word_embedding_b", [batch_size, num_steps, projection_size])
-
-        inputs = tf.batch_matmul(inputs,word_embedding_w) + word_embedding_b
-        inputs = tf.tanh(inputs)
 
         self.pos_embedding = pos_embedding = tf.get_variable("pos_embedding",
             [num_pos_tags, pos_embedding_size])
         self.chunk_embedding = chunk_embedding = tf.get_variable("chunk_embedding",
             [num_chunk_tags, chunk_embedding_size])
+
+        # Get the hidden variables from the dry run
+        tf.placeholder
+
+
+        # Get the inputs
+        inputs = tf.nn.embedding_lookup(word_embedding, self.input_data)
+        inputs = tf.batch_matmul(inputs,word_embedding_w) + word_embedding_b
+        inputs = tf.tanh(inputs)
+
+        self.sentence_lengths = sentence_lengths =  tf.placeholder(tf.int32, [batch_size])
 
         if is_training and config.keep_prob < 1:
             inputs = tf.nn.dropout(inputs, config.keep_prob)
@@ -485,6 +478,9 @@ class Shared_Model(object):
         encoding = tf.transpose(encoding, perm=[1, 0, 2])
 
         pos_logits, pos_hidden = _pos_private(encoding, config)
+
+        # add l2 regularisation
+        pos_logits = l2_reg(pos_logits)
 
         pos_loss, pos_accuracy, pos_int_pred, pos_int_targ = _loss(pos_logits, self.pos_targets)
         pos_auto_loss = _auto_encode_pos(pos_hidden,num_pos_tags,pos_decoder_size*2)
