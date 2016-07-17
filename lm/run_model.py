@@ -4,7 +4,7 @@ from __future__ import print_function
 import tensorflow as tf
 import tensorflow.python.platform
 
-import model_reader as reader
+import lm_model_reader as reader
 import numpy as np
 import pdb
 #import pandas as pd
@@ -59,7 +59,7 @@ def main(model_type, dataset_path, ptb_path, save_path,
 
     raw_data_path = dataset_path + '/data'
     raw_data = reader.raw_x_y_data(
-        raw_data_path, ptb_path + '/data', num_steps, embedding, glove_path)
+        raw_data_path, num_steps, ptb_path + '/data', embedding, glove_path)
 
     words_t, pos_t, chunk_t, words_v, \
         pos_v, chunk_v, word_to_id, pos_to_id, \
@@ -70,11 +70,12 @@ def main(model_type, dataset_path, ptb_path, save_path,
     num_chunk_tags = len(chunk_to_id)
     vocab_size = len(word_to_id)
 
-    train_lengths = [len(s) for s in words_t]
-    validation_lengths = [len(s) for s in words_v]
-    test_lengths = [len(s) for s in words_test]
-    ptb_lengths = [len(s) for s in words_ptb]
-    combined_lengths = [len(s) for s in words_c]
+    # Uncomment for Sentences
+    # train_lengths = [len(s) for s in words_t]
+    # validation_lengths = [len(s) for s in words_v]
+    # test_lengths = [len(s) for s in words_test]
+    # ptb_lengths = [len(s) for s in words_ptb]
+    # combined_lengths = [len(s) for s in words_c]
 
     # num_steps = np.max([np.max([len(s) for s in words_t]),
     #                     np.max([len(s) for s in words_ptb]),
@@ -205,17 +206,17 @@ def main(model_type, dataset_path, ptb_path, save_path,
 
                 # get training predictions as list
                 posp_t = reader._res_to_list(posp_t, config.batch_size,
-                                             pos_to_id, len(words_t), train_lengths,  to_str=True)
+                                             pos_to_id, len(words_t), to_str=True)
                 chunkp_t = reader._res_to_list(chunkp_t, config.batch_size,
-                                               chunk_to_id, len(words_t), train_lengths, to_str=True)
+                                               chunk_to_id, len(words_t),to_str=True)
                 lmp_t = reader._res_to_list(lmp_t, config.batch_size,
-                                                 word_to_id, len(words_t), train_lengths, to_str=True)
+                                                 word_to_id, len(words_t),to_str=True)
                 post_t = reader._res_to_list(post_t, config.batch_size,
-                                             pos_to_id, len(words_t), train_lengths, to_str=True)
+                                             pos_to_id, len(words_t), to_str=True)
                 chunkt_t = reader._res_to_list(chunkt_t, config.batch_size,
-                                                chunk_to_id, len(words_t), train_lengths, to_str=True)
+                                                chunk_to_id, len(words_t), to_str=True)
                 lmt_t = reader._res_to_list(lmt_t, config.batch_size,
-                                                 word_to_id, len(words_t), train_lengths, to_str=True)
+                                                 word_to_id, len(words_t),to_str=True)
 
                 # find the accuracy
                 print('finding accuracy')
@@ -243,17 +244,17 @@ def main(model_type, dataset_path, ptb_path, save_path,
 
                 # get predictions as list
                 posp_v = reader._res_to_list(posp_v, config.batch_size,
-                                             pos_to_id, len(words_v), validation_lengths, to_str=True)
+                                             pos_to_id, len(words_v), to_str=True)
                 chunkp_v = reader._res_to_list(chunkp_v, config.batch_size,
-                                                chunk_to_id, len(words_v), validation_lengths, to_str=True)
+                                                chunk_to_id, len(words_v), to_str=True)
                 lmp_v = reader._res_to_list(lmp_v, config.batch_size,
-                                                word_to_id, len(words_v), validation_lengths, to_str=True)
+                                                word_to_id, len(words_v), to_str=True)
                 chunkt_v = reader._res_to_list(chunkt_v, config.batch_size,
-                                                chunk_to_id, len(words_v), validation_lengths, to_str=True)
+                                                chunk_to_id, len(words_v), to_str=True)
                 post_v = reader._res_to_list(post_v, config.batch_size,
-                                             pos_to_id, len(words_v), validation_lengths, to_str=True)
+                                             pos_to_id, len(words_v), to_str=True)
                 lmt_v = reader._res_to_list(lmt_v, config.batch_size,
-                                                word_to_id, len(words_v), validation_lengths, to_str=True)
+                                                word_to_id, len(words_v), to_str=True)
 
                 # find accuracy
                 pos_acc = np.sum(posp_v==post_v)/float(len(posp_v))
@@ -354,22 +355,22 @@ def main(model_type, dataset_path, ptb_path, save_path,
             print('Writing Predictions')
             # prediction reshaping
             posp_c = reader._res_to_list(posp_c, config.batch_size,
-                                         pos_to_id, len(words_c), combined_lengths, to_str=True)
+                                         pos_to_id, len(words_c), to_str=True)
             posp_test = reader._res_to_list(posp_test, config.batch_size,
-                                            pos_to_id, len(words_test), test_lengths,to_str=True)
+                                            pos_to_id, len(words_test),to_str=True)
             chunkp_c = reader._res_to_list(chunkp_c, config.batch_size,
-                                           chunk_to_id, len(words_c), combined_lengths,to_str=True)
+                                           chunk_to_id, len(words_c),to_str=True)
             chunkp_test = reader._res_to_list(chunkp_test, config.batch_size,
-                                              chunk_to_id, len(words_test), test_lengths, to_str=True)
+                                              chunk_to_id, len(words_test), to_str=True)
 
             post_c = reader._res_to_list(post_c, config.batch_size,
-                                         pos_to_id, len(words_c), combined_lengths, to_str=True)
+                                         pos_to_id, len(words_c), to_str=True)
             post_test = reader._res_to_list(post_test, config.batch_size,
-                                            pos_to_id, len(words_test), test_lengths,to_str=True)
+                                            pos_to_id, len(words_test),to_str=True)
             chunkt_c = reader._res_to_list(chunkt_c, config.batch_size,
-                                           chunk_to_id, len(words_c), combined_lengths,to_str=True)
+                                           chunk_to_id, len(words_c),to_str=True)
             chunkt_test = reader._res_to_list(chunkt_test, config.batch_size,
-                                              chunk_to_id, len(words_test), test_lengths, to_str=True)
+                                              chunk_to_id, len(words_test), to_str=True)
 
             # save pickle - save_path + '/saved_variables.pkl'
             print('saving checkpoint')

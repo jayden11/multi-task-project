@@ -12,7 +12,7 @@ import tensorflow.python.platform
 from tensorflow.models.rnn import rnn_cell
 from tensorflow.models.rnn import rnn
 
-import model_reader as reader
+import lm_model_reader as reader
 import numpy as np
 import pdb
 from graph import Shared_Model
@@ -63,7 +63,7 @@ def run_epoch(session, m, conll_words, ptb_words, pos, ptb_pos, chunk, ptb_chunk
     # ======================================================
 
     def train_batch(batch, eval_op, model_type, epoch_stats, stop_write=False):
-        (x, y_pos, y_chunk, y_lm, sentence_lengths) = batch
+        (x, y_pos, y_chunk, y_lm) = batch
 
         joint_loss, _, pos_int_pred, chunk_int_pred, lm_int_pred, pos_int_true, \
             chunk_int_true, lm_int_true, pos_loss, chunk_loss, lm_loss = \
@@ -73,8 +73,9 @@ def run_epoch(session, m, conll_words, ptb_words, pos, ptb_pos, chunk, ptb_chunk
                         {m.input_data: x,
                          m.pos_targets: y_pos,
                          m.chunk_targets: y_chunk,
-                         m.lm_targets: y_lm,
-                         m.sentence_lengths: sentence_lengths})
+                         m.lm_targets: y_lm
+                         #m.sentence_lengths: sentence_lengths
+                         })
 
         epoch_stats["comb_loss"] += joint_loss
         epoch_stats["chunk_total_loss"] += chunk_loss

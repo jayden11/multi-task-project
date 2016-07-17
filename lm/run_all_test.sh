@@ -6,7 +6,7 @@ python3 run_model.py --model_type "JOINT" \
                      --ptb_path "../../data/conll_toy" \
                      --save_path "../../data/outputs/test" \
                      --glove_path '../../data/glove.6B/glove.6B.300d.txt' \
-                     --num_steps 10 \
+                     --num_steps 20 \
                      --encoder_size 200 \
                      --pos_decoder_size 200 \
                      --chunk_decoder_size 200 \

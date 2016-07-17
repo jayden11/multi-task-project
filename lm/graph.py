@@ -461,7 +461,7 @@ class Shared_Model(object):
         self.embedding_placeholder = embedding_placeholder = tf.placeholder(tf.float32, [vocab_size, word_embedding_size])
         self.embedding_init = word_embedding.assign(embedding_placeholder)
 
-        self.sentence_lengths = sentence_lengths =  tf.placeholder(tf.int32, [batch_size])
+        self.sentence_lengths = sentence_lengths =  None #tf.placeholder(tf.int32, [batch_size])
 
         inputs = tf.nn.embedding_lookup(word_embedding, self.input_data)
 
