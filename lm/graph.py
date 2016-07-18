@@ -440,11 +440,11 @@ class Shared_Model(object):
 
         inputs = tf.nn.embedding_lookup(word_embedding, self.input_data)
 
-        word_embedding_w = tf.get_variable("word_embedding_w", [batch_size, word_embedding_size, projection_size])
-        word_embedding_b = tf.get_variable("word_embedding_b", [batch_size, num_steps, projection_size])
+        #word_embedding_w = tf.get_variable("word_embedding_w", [batch_size, word_embedding_size, projection_size])
+        #word_embedding_b = tf.get_variable("word_embedding_b", [batch_size, num_steps, projection_size])
 
-        inputs = tf.batch_matmul(inputs,word_embedding_w) + word_embedding_b
-        inputs = tf.tanh(inputs)
+        #inputs = tf.batch_matmul(inputs,word_embedding_w) + word_embedding_b
+        #inputs = tf.tanh(inputs)
 
         self.pos_embedding = pos_embedding = tf.get_variable("pos_embedding",
             [num_pos_tags, pos_embedding_size])
