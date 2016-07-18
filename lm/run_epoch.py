@@ -12,7 +12,7 @@ import tensorflow.python.platform
 from tensorflow.models.rnn import rnn_cell
 from tensorflow.models.rnn import rnn
 
-import model_reader as reader
+import lm_model_reader as reader
 import numpy as np
 import pdb
 from graph import Shared_Model
@@ -37,7 +37,7 @@ def run_epoch(session, m, words, pos, chunk, pos_vocab_size, chunk_vocab_size, v
     lm_predictions = []
     lm_true = []
 
-    for step, (x, y_pos, y_chunk, y_lm, sentence_lengths) in enumerate(reader.create_batches(words, pos, chunk, m.batch_size,
+    for step, (x, y_pos, y_chunk, y_lm) in enumerate(reader.create_batches(words, pos, chunk, m.batch_size,
                                                m.num_steps, pos_vocab_size, chunk_vocab_size, vocab_size)):
 
         if model_type == 'POS':
@@ -70,8 +70,7 @@ def run_epoch(session, m, words, pos, chunk, pos_vocab_size, chunk_vocab_size, v
                         {m.input_data: x,
                          m.pos_targets: y_pos,
                          m.chunk_targets: y_chunk,
-                         m.lm_targets: y_lm,
-                         m.sentence_lengths: sentence_lengths})
+                         m.lm_targets: y_lm})
 
         comb_loss += joint_loss
         chunk_total_loss += chunk_loss

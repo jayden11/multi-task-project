@@ -205,23 +205,23 @@ def main(model_type, dataset_path, ptb_path, save_path,
                 train_lm_loss_stats = np.append(train_lm_loss_stats, lm_loss)
 
                 # get training predictions as list
-                posp_t = reader._res_to_list(posp_t, config.batch_size,
+                posp_t = reader._res_to_list(posp_t, config.batch_size, num_steps,
                                              pos_to_id, len(words_t), to_str=True)
-                chunkp_t = reader._res_to_list(chunkp_t, config.batch_size,
+                chunkp_t = reader._res_to_list(chunkp_t, config.batch_size, num_steps,
                                                chunk_to_id, len(words_t),to_str=True)
-                lmp_t = reader._res_to_list(lmp_t, config.batch_size,
+                lmp_t = reader._res_to_list(lmp_t, config.batch_size, num_steps,
                                                  word_to_id, len(words_t),to_str=True)
-                post_t = reader._res_to_list(post_t, config.batch_size,
+                post_t = reader._res_to_list(post_t, config.batch_size, num_steps,
                                              pos_to_id, len(words_t), to_str=True)
-                chunkt_t = reader._res_to_list(chunkt_t, config.batch_size,
+                chunkt_t = reader._res_to_list(chunkt_t, config.batch_size, num_steps,
                                                 chunk_to_id, len(words_t), to_str=True)
-                lmt_t = reader._res_to_list(lmt_t, config.batch_size,
+                lmt_t = reader._res_to_list(lmt_t, config.batch_size, num_steps,
                                                  word_to_id, len(words_t),to_str=True)
 
                 # find the accuracy
                 print('finding accuracy')
                 pos_acc = np.sum(posp_t==post_t)/float(len(posp_t))
-                chunk_F1 = sklearn.metrics.f1_score(chunkt_t, chunkp_t)
+                chunk_F1 = sklearn.metrics.f1_score(chunkt_t, chunkp_t,average="weighted")
 
                 # add to array
                 train_pos_stats = np.append(train_pos_stats, pos_acc)
@@ -243,22 +243,22 @@ def main(model_type, dataset_path, ptb_path, save_path,
                 valid_lm_loss_stats = np.append(valid_lm_loss_stats, lm_v_loss)
 
                 # get predictions as list
-                posp_v = reader._res_to_list(posp_v, config.batch_size,
+                posp_v = reader._res_to_list(posp_v, config.batch_size, num_steps,
                                              pos_to_id, len(words_v), to_str=True)
-                chunkp_v = reader._res_to_list(chunkp_v, config.batch_size,
+                chunkp_v = reader._res_to_list(chunkp_v, config.batch_size, num_steps,
                                                 chunk_to_id, len(words_v), to_str=True)
-                lmp_v = reader._res_to_list(lmp_v, config.batch_size,
+                lmp_v = reader._res_to_list(lmp_v, config.batch_size, num_steps,
                                                 word_to_id, len(words_v), to_str=True)
-                chunkt_v = reader._res_to_list(chunkt_v, config.batch_size,
+                chunkt_v = reader._res_to_list(chunkt_v, config.batch_size, num_steps,
                                                 chunk_to_id, len(words_v), to_str=True)
-                post_v = reader._res_to_list(post_v, config.batch_size,
+                post_v = reader._res_to_list(post_v, config.batch_size, num_steps,
                                              pos_to_id, len(words_v), to_str=True)
-                lmt_v = reader._res_to_list(lmt_v, config.batch_size,
+                lmt_v = reader._res_to_list(lmt_v, config.batch_size, num_steps,
                                                 word_to_id, len(words_v), to_str=True)
 
                 # find accuracy
                 pos_acc = np.sum(posp_v==post_v)/float(len(posp_v))
-                chunk_F1 = sklearn.metrics.f1_score(chunkt_v, chunkp_v)
+                chunk_F1 = sklearn.metrics.f1_score(chunkt_v, chunkp_v, average="weighted")
 
 
                 print("Pos Validation Accuracy After Epoch %d :  %3f" % (i+1, pos_acc))
@@ -354,23 +354,23 @@ def main(model_type, dataset_path, ptb_path, save_path,
 
             print('Writing Predictions')
             # prediction reshaping
-            posp_c = reader._res_to_list(posp_c, config.batch_size,
+            posp_c = reader._res_to_list(posp_c, config.batch_size, num_steps,
                                          pos_to_id, len(words_c), to_str=True)
-            posp_test = reader._res_to_list(posp_test, config.batch_size,
-                                            pos_to_id, len(words_test),to_str=True)
-            chunkp_c = reader._res_to_list(chunkp_c, config.batch_size,
+            posp_test = reader._res_to_list(posp_test, config.batch_size, num_steps,
+                                            pos_to_id, len(words_test), to_str=True)
+            chunkp_c = reader._res_to_list(chunkp_c, config.batch_size, num_steps,
                                            chunk_to_id, len(words_c),to_str=True)
-            chunkp_test = reader._res_to_list(chunkp_test, config.batch_size,
-                                              chunk_to_id, len(words_test), to_str=True)
+            chunkp_test = reader._res_to_list(chunkp_test, config.batch_size, num_steps,
+                                              chunk_to_id, len(words_test),  to_str=True)
 
-            post_c = reader._res_to_list(post_c, config.batch_size,
+            post_c = reader._res_to_list(post_c, config.batch_size, num_steps,
                                          pos_to_id, len(words_c), to_str=True)
-            post_test = reader._res_to_list(post_test, config.batch_size,
-                                            pos_to_id, len(words_test),to_str=True)
-            chunkt_c = reader._res_to_list(chunkt_c, config.batch_size,
+            post_test = reader._res_to_list(post_test, config.batch_size, num_steps,
+                                            pos_to_id, len(words_test), to_str=True)
+            chunkt_c = reader._res_to_list(chunkt_c, config.batch_size, num_steps,
                                            chunk_to_id, len(words_c),to_str=True)
-            chunkt_test = reader._res_to_list(chunkt_test, config.batch_size,
-                                              chunk_to_id, len(words_test), to_str=True)
+            chunkt_test = reader._res_to_list(chunkt_test, config.batch_size, num_steps,
+                                              chunk_to_id, len(words_test),  to_str=True)
 
             # save pickle - save_path + '/saved_variables.pkl'
             print('saving checkpoint')
@@ -378,37 +378,37 @@ def main(model_type, dataset_path, ptb_path, save_path,
 
             id_to_word = {v: k for k, v in word_to_id.items()}
 
-            words_t = [id_to_word[k] for k in np.concatenate(words_t)]
-            words_v = [id_to_word[k] for k in np.concatenate(words_v)]
-            words_c = [id_to_word[k] for k in np.concatenate(words_c)]
-            words_test = [id_to_word[k] for k in np.concatenate(words_test)]
+            words_t = [id_to_word[k] for k in words_t[num_steps-1:]]
+            words_v = [id_to_word[k] for k in words_v[num_steps-1:]]
+            words_c = [id_to_word[k] for k in words_c[num_steps-1:]]
+            words_test = [id_to_word[k] for k in words_test[num_steps-1:]]
 
             # find the accuracy
             print('finding  test accuracy')
             pos_acc = np.sum(posp_test==post_test)/float(len(posp_test))
-            chunk_F1 = sklearn.metrics.f1_score(chunkt_test, chunkp_test)
+            chunk_F1 = sklearn.metrics.f1_score(chunkt_test, chunkp_test,average="weighted")
 
             print("POS Test Accuracy: " + str(pos_acc))
             print("Chunk Test Acccuracy: " + str(chunk_F1))
 
             if test==False:
-                train_custom = [words_t, np.char.upper(post_t), np.char.upper(chunkt_t)]
-                valid_custom = [words_v, np.char.upper(post_v), np.char.upper(chunkt_v)]
-            combined = [words_c, np.char.upper(post_c), np.char.upper(chunkt_c)]
-            test_data = [words_test, np.char.upper(post_test), np.char.upper(chunkt_test)]
+                train_custom = np.hstack((np.array(words_t).reshape(-1,1), np.char.upper(post_t), np.char.upper(chunkt_t)))
+                valid_custom = np.hstack((np.array(words_v).reshape(-1,1), np.char.upper(post_v), np.char.upper(chunkt_v)))
+            combined = np.hstack((np.array(words_c).reshape(-1,1), np.char.upper(post_c), np.char.upper(chunkt_c)))
+            test_data = np.hstack((np.array(words_test).reshape(-1,1), np.char.upper(post_test), np.char.upper(chunkt_test)))
 
             print('loaded text')
 
             if test==False:
-                chunk_pred_train = np.concatenate((np.transpose(train_custom), np.char.upper(chunkp_t).reshape(-1,1)), axis=1)
-                chunk_pred_val = np.concatenate((np.transpose(valid_custom), np.char.upper(chunkp_v).reshape(-1,1)), axis=1)
-            chunk_pred_c = np.concatenate((np.transpose(combined), np.char.upper(chunkp_c).reshape(-1,1)), axis=1)
-            chunk_pred_test = np.concatenate((np.transpose(test_data), np.char.upper(chunkp_test).reshape(-1,1)), axis=1)
+                chunk_pred_train = np.concatenate((train_custom, np.char.upper(chunkp_t).reshape(-1,1)), axis=1)
+                chunk_pred_val = np.concatenate((valid_custom, np.char.upper(chunkp_v).reshape(-1,1)), axis=1)
+            chunk_pred_c = np.concatenate((combined, np.char.upper(chunkp_c).reshape(-1,1)), axis=1)
+            chunk_pred_test = np.concatenate((test_data, np.char.upper(chunkp_test).reshape(-1,1)), axis=1)
             if test==False:
-                pos_pred_train = np.concatenate((np.transpose(train_custom), np.char.upper(posp_t).reshape(-1,1)), axis=1)
-                pos_pred_val = np.concatenate((np.transpose(valid_custom), np.char.upper(posp_v).reshape(-1,1)), axis=1)
-            pos_pred_c = np.concatenate((np.transpose(combined), np.char.upper(posp_c).reshape(-1,1)), axis=1)
-            pos_pred_test = np.concatenate((np.transpose(test_data), np.char.upper(posp_test).reshape(-1,1)), axis=1)
+                pos_pred_train = np.concatenate((train_custom, np.char.upper(posp_t).reshape(-1,1)), axis=1)
+                pos_pred_val = np.concatenate((valid_custom, np.char.upper(posp_v).reshape(-1,1)), axis=1)
+            pos_pred_c = np.concatenate((combined, np.char.upper(posp_c).reshape(-1,1)), axis=1)
+            pos_pred_test = np.concatenate((test_data, np.char.upper(posp_test).reshape(-1,1)), axis=1)
 
             print('finished concatenating, about to start saving')
 
