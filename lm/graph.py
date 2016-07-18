@@ -430,34 +430,9 @@ class Shared_Model(object):
             train_op = optimizer.apply_gradients(zip(grads, tvars))
             return train_op
 
-        def _auto_encode_pos(latent_state,num_pos_tags,latent_state_size):
-            auto_encode_pos_w1 = tf.get_variable("auto_encode_pos1", [latent_state_size, num_pos_tags])
-            auto_encode_pos_w2 = tf.get_variable("auto_encode_pos2", [num_pos_tags, latent_state_size])
-            auto_encode_pos = tf.matmul(latent_state,auto_encode_pos_w1)
-            auto_encode_pos = tf.nn.relu(auto_encode_pos)
-            auto_encode_pos = tf.matmul(auto_encode_pos, auto_encode_pos_w2)
-            cross_entropy = tf.nn.softmax_cross_entropy_with_logits(auto_encode_pos,
-                                                                    latent_state,
-                                                                    name='auto_xentropy_pos')
-            loss = tf.reduce_mean(cross_entropy, name='auto_xentropy_mean')
-            return loss
-
-        def _auto_encode_chunk(latent_state,num_chunk_tags,latent_state_size):
-            auto_encode_chunk_w1 = tf.get_variable("auto_encode_chunk1", [latent_state_size, num_chunk_tags])
-            auto_encode_chunk_w2 = tf.get_variable("auto_encode_chunk2", [num_chunk_tags, latent_state_size])
-            auto_encode_chunk = tf.matmul(latent_state,auto_encode_chunk_w1)
-            auto_encode_chunk = tf.nn.relu(auto_encode_chunk)
-            auto_encode_chunk = tf.matmul(auto_encode_chunk, auto_encode_chunk_w2)
-            cross_entropy = tf.nn.softmax_cross_entropy_with_logits(auto_encode_chunk,
-                                                                    latent_state,
-                                                                    name='auto_xentropy_chunk')
-            loss = tf.reduce_mean(cross_entropy, name='auto_xentropy_mean_chunk')
-            return loss
-
-
         # do the word embedding stuff
         word_embedding = tf.Variable(tf.constant(0.0, shape=[vocab_size, word_embedding_size]),
-                trainable=False, name="word_embedding")
+                trainable=True, name="word_embedding")
         self.embedding_placeholder = embedding_placeholder = tf.placeholder(tf.float32, [vocab_size, word_embedding_size])
         self.embedding_init = word_embedding.assign(embedding_placeholder)
 
@@ -487,7 +462,6 @@ class Shared_Model(object):
         pos_logits, pos_hidden = _pos_private(encoding, config)
 
         pos_loss, pos_accuracy, pos_int_pred, pos_int_targ = _loss(pos_logits, self.pos_targets)
-        pos_auto_loss = _auto_encode_pos(pos_hidden,num_pos_tags,pos_decoder_size*2)
         self.pos_loss = pos_loss
 
         # make the variables available to the outside
@@ -503,7 +477,6 @@ class Shared_Model(object):
         chunk_logits, chunk_hidden = _chunk_private(encoding, pos_to_chunk_embed, pos_hidden, config)
 
         chunk_loss, chunk_accuracy, chunk_int_pred, chunk_int_targ = _loss(chunk_logits, self.chunk_targets)
-        chunk_auto_loss = _auto_encode_chunk(chunk_hidden,num_chunk_tags,chunk_decoder_size*2)
 
         self.chunk_loss = chunk_loss
         self.chunk_int_pred = chunk_int_pred
@@ -530,4 +503,3 @@ class Shared_Model(object):
         self.chunk_op = _training(chunk_loss, config, self)
         self.lm_op = _training(lm_loss, config, self)
         self.joint_op = _training(chunk_loss + pos_loss + lm_loss, config, self)
-        self.auto_op = _training(lm_loss + chunk_auto_loss + pos_auto_loss, config, self)
