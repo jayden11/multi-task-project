@@ -104,20 +104,18 @@ def main(model_type, dataset_path, ptb_path, save_path,
             # model to train hyperparameters on
             with tf.variable_scope("hyp_model", reuse=None, initializer=initializer):
                 m = Shared_Model(is_training=True, config=config, num_pos_tags=num_pos_tags,
-                num_chunk_tags=num_chunk_tags, vocab_size=vocab_size, num_steps=num_steps, projection_size=projection_size)
+                num_chunk_tags=num_chunk_tags, vocab_size=vocab_size,
+                word_embedding=word_embedding)
 
             with tf.variable_scope("hyp_model", reuse=True, initializer=initializer):
                 mValid = Shared_Model(is_training=False, config=config, num_pos_tags=num_pos_tags,
-                num_chunk_tags=num_chunk_tags, vocab_size=vocab_size, num_steps=num_steps, projection_size=projection_size)
+                num_chunk_tags=num_chunk_tags, vocab_size=vocab_size,
+                word_embedding=word_embedding)
 
 
-            print('initialising most variables')
+            print('initialising variables')
 
             tf.initialize_all_variables().run()
-
-            print('initialising word embeddings')
-            session.run(m.embedding_init, feed_dict={m.embedding_placeholder: word_embedding})
-            session.run(mValid.embedding_init, feed_dict={mValid.embedding_placeholder: word_embedding})
 
             print('finding best epoch parameter')
             # ====================================
@@ -300,17 +298,16 @@ def main(model_type, dataset_path, ptb_path, save_path,
 
         with tf.variable_scope("final_model", reuse=None, initializer=initializer):
             mTrain = Shared_Model(is_training=True, config=config, num_pos_tags=num_pos_tags,
-            num_chunk_tags=num_chunk_tags, vocab_size=vocab_size, num_steps=num_steps, projection_size=projection_size)
+            num_chunk_tags=num_chunk_tags, vocab_size=vocab_size,
+            word_embedding=word_embedding)
 
         with tf.variable_scope("final_model", reuse=True, initializer=initializer):
             mTest = Shared_Model(is_training=False, config=config, num_pos_tags=num_pos_tags,
-            num_chunk_tags=num_chunk_tags, vocab_size=vocab_size, num_steps=num_steps, projection_size=projection_size)
+            num_chunk_tags=num_chunk_tags, vocab_size=vocab_size,
+            word_embedding=word_embedding)
 
 
         tf.initialize_all_variables().run()
-
-        session.run(mTrain.embedding_init, feed_dict={mTrain.embedding_placeholder: word_embedding})
-        session.run(mTest.embedding_init, feed_dict={mTest.embedding_placeholder: word_embedding})
 
 
         if write_to_file == True:

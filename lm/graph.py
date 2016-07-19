@@ -12,13 +12,13 @@ import pdb
 class Shared_Model(object):
 
     def __init__(self, config, is_training, num_pos_tags, num_chunk_tags,
-        vocab_size, num_steps, projection_size):
+        vocab_size, word_embedding):
         """Initialisation
             basically set the self-variables up, so that we can call them
             as variables to the model.
         """
         self.max_grad_norm = max_grad_norm = config.max_grad_norm
-        self.num_steps = num_steps
+        self.num_steps = num_steps = config.num_steps
         self.encoder_size = encoder_size = config.encoder_size
         self.pos_decoder_size = pos_decoder_size = config.pos_decoder_size
         self.chunk_decoder_size = chunk_decoder_size = config.chunk_decoder_size
@@ -44,10 +44,6 @@ class Shared_Model(object):
         self.lm_targets = tf.placeholder(tf.float32, [(batch_size*num_steps),
                                             vocab_size])
 
-        # create a regulariser
-        l2_reg = tf.contrib.layers.l2_regularizer(0.2)
-
-
         def _shared_layer(input_data, config):
             """Build the model to decoding
 
@@ -67,7 +63,7 @@ class Shared_Model(object):
                     cell_bw = rnn_cell.GRUCell(config.encoder_size)
 
                 inputs = [tf.squeeze(input_, [1])
-                          for input_ in tf.split(1, num_steps, input_data)]
+                          for input_ in tf.split(1, config.num_steps, input_data)]
 
                 if is_training and config.keep_prob < 1:
                     cell_fw = rnn_cell.DropoutWrapper(
@@ -85,7 +81,6 @@ class Shared_Model(object):
                 encoder_outputs, _, _ = rnn.bidirectional_rnn(cell_fw, cell_bw, inputs,
                                                       initial_state_fw=initial_state_fw,
                                                       initial_state_bw=initial_state_bw,
-                                                      sequence_length=sentence_lengths,
                                                       scope="encoder_rnn")
 
 
@@ -96,7 +91,7 @@ class Shared_Model(object):
                     cell = rnn_cell.GRUCell(config.encoder_size)
 
                 inputs = [tf.squeeze(input_, [1])
-                          for input_ in tf.split(1, num_steps, input_data)]
+                          for input_ in tf.split(1, config.num_steps, input_data)]
 
                 if is_training and config.keep_prob < 1:
                     cell = rnn_cell.DropoutWrapper(
@@ -108,7 +103,6 @@ class Shared_Model(object):
 
                 encoder_outputs, encoder_states = rnn.rnn(cell, inputs,
                                                           initial_state=initial_state,
-                                                          sequence_length=sentence_lengths,
                                                           scope="encoder_rnn")
 
             return encoder_outputs
@@ -148,19 +142,18 @@ class Shared_Model(object):
 
                     # puts it into batch_size X input_size
                     inputs = [tf.squeeze(input_, [1])
-                              for input_ in tf.split(1, num_steps,
+                              for input_ in tf.split(1, config.num_steps,
                                                      encoder_units)]
 
                     decoder_outputs, _, _ = rnn.bidirectional_rnn(cell_fw, cell_bw, inputs,
                                                               initial_state_fw=initial_state_fw,
                                                               initial_state_bw=initial_state_bw,
-                                                              sequence_length=sentence_lengths,
                                                               scope="pos_rnn")
 
                     output = tf.reshape(tf.concat(1, decoder_outputs),
                                         [-1, 2*config.pos_decoder_size])
 
-                    softmax_w = tf.get_variable("softmax_w_pos",
+                    softmax_w = tf.get_variable("softmax_w",
                                                 [2*config.pos_decoder_size,
                                                  num_pos_tags])
                 else:
@@ -180,7 +173,7 @@ class Shared_Model(object):
 
                     # puts it into batch_size X input_size
                     inputs = [tf.squeeze(input_, [1])
-                              for input_ in tf.split(1, num_steps,
+                              for input_ in tf.split(1, config.num_steps,
                                                      encoder_units)]
 
                     decoder_outputs, decoder_states = rnn.rnn(cell, inputs,
@@ -189,16 +182,16 @@ class Shared_Model(object):
                     output = tf.reshape(tf.concat(1, decoder_outputs),
                                         [-1, config.pos_decoder_size])
 
-                    softmax_w = tf.get_variable("softmax_w_pos",
+                    softmax_w = tf.get_variable("softmax_w",
                                                 [config.pos_decoder_size,
                                                  num_pos_tags])
 
-                softmax_b = tf.get_variable("softmax_b_pos", [num_pos_tags])
+                softmax_b = tf.get_variable("softmax_b", [num_pos_tags])
                 logits = tf.matmul(output, softmax_w) + softmax_b
 
-            return logits, output
+            return logits
 
-        def _chunk_private(encoder_units, pos_prediction, pos_hidden, config):
+        def _chunk_private(encoder_units, pos_prediction, config):
             """Decode model for chunks
 
             Args:
@@ -214,7 +207,6 @@ class Shared_Model(object):
 
             pos_prediction = tf.reshape(pos_prediction,
                 [batch_size, num_steps, pos_embedding_size])
-            #pos_hidden = tf.reshape(pos_hidden, [batch_size, num_steps, 2*config.pos_decoder_size])
             chunk_inputs = tf.concat(2, [pos_prediction, encoder_units])
 
             with tf.variable_scope("chunk_decoder"):
@@ -240,17 +232,16 @@ class Shared_Model(object):
 
                     # this function puts the 3d tensor into a 2d tensor: batch_size x input size
                     inputs = [tf.squeeze(input_, [1])
-                              for input_ in tf.split(1, num_steps,
+                              for input_ in tf.split(1, config.num_steps,
                                                      chunk_inputs)]
 
                     decoder_outputs, _, _ = rnn.bidirectional_rnn(cell_fw, cell_bw,
                                                               inputs, initial_state_fw=initial_state_fw,
                                                               initial_state_bw=initial_state_bw,
-                                                              sequence_length=sentence_lengths,
                                                               scope="chunk_rnn")
                     output = tf.reshape(tf.concat(1, decoder_outputs),
                                         [-1, 2*config.chunk_decoder_size])
-                    softmax_w = tf.get_variable("softmax_w_chunk",
+                    softmax_w = tf.get_variable("softmax_w",
                                                 [2*config.chunk_decoder_size,
                                                  num_chunk_tags])
                 else:
@@ -269,27 +260,26 @@ class Shared_Model(object):
 
                     # this function puts the 3d tensor into a 2d tensor: batch_size x input size
                     inputs = [tf.squeeze(input_, [1])
-                              for input_ in tf.split(1, num_steps,
+                              for input_ in tf.split(1, config.num_steps,
                                                      chunk_inputs)]
 
                     decoder_outputs, decoder_states = rnn.rnn(cell,
                                                               inputs, initial_state=initial_state,
-                                                              sequence_length=sentence_lengths,
                                                               scope="chunk_rnn")
 
                     output = tf.reshape(tf.concat(1, decoder_outputs),
                                         [-1, config.chunk_decoder_size])
 
-                    softmax_w = tf.get_variable("softmax_w_chunk",
+                    softmax_w = tf.get_variable("softmax_w",
                                                 [config.chunk_decoder_size,
                                                  num_chunk_tags])
 
-                softmax_b = tf.get_variable("softmax_b_chunk", [num_chunk_tags])
+                softmax_b = tf.get_variable("softmax_b", [num_chunk_tags])
                 logits = tf.matmul(output, softmax_w) + softmax_b
 
-            return logits, output
+            return logits
 
-        def _lm_private(encoder_units, pos_prediction, chunk_prediction, pos_hidden, chunk_hidden, config):
+        def _lm_private(encoder_units, pos_prediction, chunk_prediction, config):
             """Decode model for lm
 
             Args:
@@ -305,10 +295,6 @@ class Shared_Model(object):
 
             pos_prediction = tf.reshape(pos_prediction,
                 [batch_size, num_steps, pos_embedding_size])
-            #pos_hidden = tf.reshape(pos_hidden, [batch_size, num_steps,
-                                    #2*config.pos_decoder_size])
-            #chunk_hidden = tf.reshape(chunk_hidden, [batch_size, num_steps,
-                                    #2*config.chunk_decoder_size])
             chunk_prediction = tf.reshape(chunk_prediction,
                 [batch_size, num_steps, chunk_embedding_size])
             lm_inputs = tf.concat(2, [chunk_prediction, pos_prediction, encoder_units])
@@ -336,13 +322,12 @@ class Shared_Model(object):
 
                     # this function puts the 3d tensor into a 2d tensor: batch_size x input size
                     inputs = [tf.squeeze(input_, [1])
-                              for input_ in tf.split(1, num_steps,
+                              for input_ in tf.split(1, config.num_steps,
                                                      lm_inputs)]
 
                     decoder_outputs, _, _ = rnn.bidirectional_rnn(cell_fw, cell_bw,
                                                               inputs, initial_state_fw=initial_state_fw,
                                                               initial_state_bw=initial_state_bw,
-                                                              sequence_length=sentence_lengths,
                                                               scope="lm_rnn")
                     output = tf.reshape(tf.concat(1, decoder_outputs),
                                         [-1, 2*config.lm_decoder_size])
@@ -365,12 +350,11 @@ class Shared_Model(object):
 
                     # this function puts the 3d tensor into a 2d tensor: batch_size x input size
                     inputs = [tf.squeeze(input_, [1])
-                              for input_ in tf.split(1, num_steps,
+                              for input_ in tf.split(1, config.num_steps,
                                                      lm_inputs)]
 
                     decoder_outputs, decoder_states = rnn.rnn(cell,
                                                               inputs, initial_state=initial_state,
-                                                              sequence_length=sentence_lengths,
                                                               scope="lm_rnn")
 
                     output = tf.reshape(tf.concat(1, decoder_outputs),
@@ -392,12 +376,10 @@ class Shared_Model(object):
                 returns:
                     loss as tensor of type float
             """
-            l2 = tf.reduce_mean(tf.square(tf.nn.softmax(logits,name='softmax')))
-
             cross_entropy = tf.nn.softmax_cross_entropy_with_logits(logits,
                                                                     labels,
                                                                     name='xentropy')
-            loss = tf.reduce_mean(cross_entropy, name='xentropy_mean') + l2
+            loss = tf.reduce_mean(cross_entropy, name='xentropy_mean')
             (_, int_targets) = tf.nn.top_k(labels, 1)
             (_, int_predictions) = tf.nn.top_k(logits, 1)
             num_true = tf.reduce_sum(tf.cast(tf.equal(int_targets, int_predictions), tf.float32))
@@ -430,21 +412,12 @@ class Shared_Model(object):
             train_op = optimizer.apply_gradients(zip(grads, tvars))
             return train_op
 
-        # do the word embedding stuff
-        word_embedding = tf.Variable(tf.constant(0.0, shape=[vocab_size, word_embedding_size]),
-                trainable=True, name="word_embedding")
-        self.embedding_placeholder = embedding_placeholder = tf.placeholder(tf.float32, [vocab_size, word_embedding_size])
-        self.embedding_init = word_embedding.assign(embedding_placeholder)
-
-        self.sentence_lengths = sentence_lengths =  None #tf.placeholder(tf.int32, [batch_size])
+        word_embedding = word_embedding = tf.get_variable("word_embedding",
+                                            initializer=tf.constant(word_embedding))
 
         inputs = tf.nn.embedding_lookup(word_embedding, self.input_data)
 
-        #word_embedding_w = tf.get_variable("word_embedding_w", [batch_size, word_embedding_size, projection_size])
-        #word_embedding_b = tf.get_variable("word_embedding_b", [batch_size, num_steps, projection_size])
 
-        #inputs = tf.batch_matmul(inputs,word_embedding_w) + word_embedding_b
-        #inputs = tf.tanh(inputs)
 
         self.pos_embedding = pos_embedding = tf.get_variable("pos_embedding",
             [num_pos_tags, pos_embedding_size])
@@ -459,12 +432,10 @@ class Shared_Model(object):
         encoding = tf.pack(encoding)
         encoding = tf.transpose(encoding, perm=[1, 0, 2])
 
-        pos_logits, pos_hidden = _pos_private(encoding, config)
-
+        pos_logits = _pos_private(encoding, config)
         pos_loss, pos_accuracy, pos_int_pred, pos_int_targ = _loss(pos_logits, self.pos_targets)
         self.pos_loss = pos_loss
 
-        # make the variables available to the outside
         self.pos_int_pred = pos_int_pred
         self.pos_int_targ = pos_int_targ
 
@@ -474,8 +445,7 @@ class Shared_Model(object):
         else:
             pos_to_chunk_embed = tf.matmul(tf.nn.softmax(pos_logits),pos_embedding)
 
-        chunk_logits, chunk_hidden = _chunk_private(encoding, pos_to_chunk_embed, pos_hidden, config)
-
+        chunk_logits = _chunk_private(encoding, pos_to_chunk_embed, config)
         chunk_loss, chunk_accuracy, chunk_int_pred, chunk_int_targ = _loss(chunk_logits, self.chunk_targets)
 
         self.chunk_loss = chunk_loss
@@ -488,12 +458,13 @@ class Shared_Model(object):
         else:
             chunk_to_lm_embed = tf.matmul(tf.nn.softmax(chunk_logits),chunk_embedding)
 
-        lm_logits = _lm_private(encoding, chunk_to_lm_embed,  pos_to_chunk_embed, chunk_hidden, pos_hidden, config)
+        lm_logits = _lm_private(encoding, chunk_to_lm_embed,  pos_to_chunk_embed, config)
         lm_loss, lm_accuracy, lm_int_pred, lm_int_targ = _loss(lm_logits, self.lm_targets)
 
         self.lm_loss = lm_loss
         self.lm_int_pred = lm_int_pred
         self.lm_int_targ = lm_int_targ
+
         self.joint_loss = (chunk_loss + pos_loss + lm_loss)/3
 
         if not is_training:
@@ -502,4 +473,4 @@ class Shared_Model(object):
         self.pos_op = _training(pos_loss, config, self)
         self.chunk_op = _training(chunk_loss, config, self)
         self.lm_op = _training(lm_loss, config, self)
-        self.joint_op = _training(chunk_loss + pos_loss + lm_loss, config, self)
+        self.joint_op = _training((chunk_loss + pos_loss + lm_loss)/3, config, self)
