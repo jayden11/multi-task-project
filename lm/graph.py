@@ -12,7 +12,7 @@ import pdb
 class Shared_Model(object):
 
     def __init__(self, config, is_training, num_pos_tags, num_chunk_tags,
-        vocab_size, word_embedding):
+        vocab_size, word_embedding, projection_size):
         """Initialisation
             basically set the self-variables up, so that we can call them
             as variables to the model.
@@ -413,9 +413,14 @@ class Shared_Model(object):
             return train_op
 
         word_embedding = word_embedding = tf.get_variable("word_embedding",
-                                            initializer=tf.constant(word_embedding))
+                                            initializer=tf.constant(word_embedding), trainable=False)
 
         inputs = tf.nn.embedding_lookup(word_embedding, self.input_data)
+        word_embedding_w = tf.get_variable("word_embedding_w", [batch_size, word_embedding_size, projection_size])
+        word_embedding_b = tf.get_variable("word_embedding_b", [batch_size, num_steps, projection_size])
+
+        inputs = tf.batch_matmul(inputs,word_embedding_w) + word_embedding_b
+        inputs = tf.tanh(inputs)
 
 
 

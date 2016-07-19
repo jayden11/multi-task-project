@@ -105,12 +105,12 @@ def main(model_type, dataset_path, ptb_path, save_path,
             with tf.variable_scope("hyp_model", reuse=None, initializer=initializer):
                 m = Shared_Model(is_training=True, config=config, num_pos_tags=num_pos_tags,
                 num_chunk_tags=num_chunk_tags, vocab_size=vocab_size,
-                word_embedding=word_embedding)
+                word_embedding=word_embedding, projection_size=projection_size)
 
             with tf.variable_scope("hyp_model", reuse=True, initializer=initializer):
                 mValid = Shared_Model(is_training=False, config=config, num_pos_tags=num_pos_tags,
                 num_chunk_tags=num_chunk_tags, vocab_size=vocab_size,
-                word_embedding=word_embedding)
+                word_embedding=word_embedding, projection_size=projection_size)
 
 
             print('initialising variables')
@@ -299,12 +299,12 @@ def main(model_type, dataset_path, ptb_path, save_path,
         with tf.variable_scope("final_model", reuse=None, initializer=initializer):
             mTrain = Shared_Model(is_training=True, config=config, num_pos_tags=num_pos_tags,
             num_chunk_tags=num_chunk_tags, vocab_size=vocab_size,
-            word_embedding=word_embedding)
+            word_embedding=word_embedding, projection_size=projection_size)
 
         with tf.variable_scope("final_model", reuse=True, initializer=initializer):
             mTest = Shared_Model(is_training=False, config=config, num_pos_tags=num_pos_tags,
             num_chunk_tags=num_chunk_tags, vocab_size=vocab_size,
-            word_embedding=word_embedding)
+            word_embedding=word_embedding, projection_size=projection_size)
 
 
         tf.initialize_all_variables().run()
