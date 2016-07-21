@@ -49,8 +49,7 @@ class Config(object):
 def main(model_type, dataset_path, ptb_path, save_path,
     num_steps, encoder_size, pos_decoder_size, chunk_decoder_size, dropout,
     batch_size, pos_embedding_size, num_shared_layers, num_private_layers, chunk_embedding_size,
-    lm_decoder_size, bidirectional, lstm, write_to_file, mix_percent,glove_path,max_epoch,
-    projection_size, embedding=False, test=False):
+    lm_decoder_size, bidirectional, lstm, write_to_file, mix_percent,glove_path,max_epoch,embedding=False, test=False):
 
     """Main."""
     config = Config(num_steps, encoder_size, pos_decoder_size, chunk_decoder_size, dropout,
@@ -103,12 +102,12 @@ def main(model_type, dataset_path, ptb_path, save_path,
             # model to train hyperparameters on
             with tf.variable_scope("hyp_model", reuse=None, initializer=initializer):
                 m = Shared_Model(is_training=True, config=config, num_pos_tags=num_pos_tags,
-                num_chunk_tags=num_chunk_tags, vocab_size=vocab_size, num_steps=num_steps, projection_size=projection_size,
+                num_chunk_tags=num_chunk_tags, vocab_size=vocab_size, num_steps=num_steps,
                 word_embedding=word_embedding)
 
             with tf.variable_scope("hyp_model", reuse=True, initializer=initializer):
                 mValid = Shared_Model(is_training=False, config=config, num_pos_tags=num_pos_tags,
-                num_chunk_tags=num_chunk_tags, vocab_size=vocab_size, num_steps=num_steps, projection_size=projection_size,
+                num_chunk_tags=num_chunk_tags, vocab_size=vocab_size, num_steps=num_steps,
                 word_embedding=word_embedding)
 
 
@@ -297,19 +296,16 @@ def main(model_type, dataset_path, ptb_path, save_path,
 
         with tf.variable_scope("final_model", reuse=None, initializer=initializer):
             mTrain = Shared_Model(is_training=True, config=config, num_pos_tags=num_pos_tags,
-            num_chunk_tags=num_chunk_tags, vocab_size=vocab_size, num_steps=num_steps, projection_size=projection_size,
+            num_chunk_tags=num_chunk_tags, vocab_size=vocab_size, num_steps=num_steps,
             word_embedding=word_embedding)
 
         with tf.variable_scope("final_model", reuse=True, initializer=initializer):
             mTest = Shared_Model(is_training=False, config=config, num_pos_tags=num_pos_tags,
-            num_chunk_tags=num_chunk_tags, vocab_size=vocab_size, num_steps=num_steps, projection_size=projection_size,
+            num_chunk_tags=num_chunk_tags, vocab_size=vocab_size, num_steps=num_steps,
             word_embedding=word_embedding)
 
 
         tf.initialize_all_variables().run()
-
-        session.run(mTrain.embedding_init, feed_dict={mTrain.embedding_placeholder: word_embedding})
-        session.run(mTest.embedding_init, feed_dict={mTest.embedding_placeholder: word_embedding})
 
 
         if write_to_file == True:
@@ -469,7 +465,6 @@ if __name__ == "__main__":
     parser.add_argument("--embedding")
     parser.add_argument("--max_epoch")
     parser.add_argument("--test")
-    parser.add_argument("--projection_size")
     args = parser.parse_args()
     if (str(args.model_type) != "POS") and (str(args.model_type) != "CHUNK"):
         args.model_type = 'JOINT'
@@ -482,4 +477,4 @@ if __name__ == "__main__":
          int(args.pos_embedding_size), int(args.num_shared_layers), int(args.num_private_layers), \
          int(args.chunk_embedding_size), int(args.lm_decoder_size), \
          int(args.bidirectional), int(args.lstm), int(args.write_to_file), float(args.mix_percent), \
-         str(args.glove_path), int(args.max_epoch), int(args.projection_size),int(args.embedding),int(args.test))
+         str(args.glove_path), int(args.max_epoch), int(args.embedding),int(args.test))
