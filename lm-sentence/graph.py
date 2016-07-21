@@ -160,7 +160,7 @@ class Shared_Model(object):
                     output = tf.reshape(tf.concat(1, decoder_outputs),
                                         [-1, 2*config.pos_decoder_size])
 
-                    softmax_w = tf.get_variable("softmax_w_pos",
+                    softmax_w = tf.get_variable("softmax_w",
                                                 [2*config.pos_decoder_size,
                                                  num_pos_tags])
                 else:
@@ -189,11 +189,11 @@ class Shared_Model(object):
                     output = tf.reshape(tf.concat(1, decoder_outputs),
                                         [-1, config.pos_decoder_size])
 
-                    softmax_w = tf.get_variable("softmax_w_pos",
+                    softmax_w = tf.get_variable("softmax_w",
                                                 [config.pos_decoder_size,
                                                  num_pos_tags])
 
-                softmax_b = tf.get_variable("softmax_b_pos", [num_pos_tags])
+                softmax_b = tf.get_variable("softmax_b", [num_pos_tags])
                 logits = tf.matmul(output, softmax_w) + softmax_b
 
             return logits, output
@@ -250,7 +250,7 @@ class Shared_Model(object):
                                                               scope="chunk_rnn")
                     output = tf.reshape(tf.concat(1, decoder_outputs),
                                         [-1, 2*config.chunk_decoder_size])
-                    softmax_w = tf.get_variable("softmax_w_chunk",
+                    softmax_w = tf.get_variable("softmax_w",
                                                 [2*config.chunk_decoder_size,
                                                  num_chunk_tags])
                 else:
@@ -280,11 +280,11 @@ class Shared_Model(object):
                     output = tf.reshape(tf.concat(1, decoder_outputs),
                                         [-1, config.chunk_decoder_size])
 
-                    softmax_w = tf.get_variable("softmax_w_chunk",
+                    softmax_w = tf.get_variable("softmax_w",
                                                 [config.chunk_decoder_size,
                                                  num_chunk_tags])
 
-                softmax_b = tf.get_variable("softmax_b_chunk", [num_chunk_tags])
+                softmax_b = tf.get_variable("softmax_b", [num_chunk_tags])
                 logits = tf.matmul(output, softmax_w) + softmax_b
 
             return logits, output
@@ -493,4 +493,4 @@ class Shared_Model(object):
         self.pos_op = _training(pos_loss, config, self)
         self.chunk_op = _training(chunk_loss, config, self)
         self.lm_op = _training(lm_loss, config, self)
-        self.joint_op = _training(chunk_loss + pos_loss + lm_loss, config, self)
+        self.joint_op = _training((chunk_loss + pos_loss + lm_loss)/3, config, self)
