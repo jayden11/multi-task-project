@@ -227,7 +227,7 @@ def main(model_type, dataset_path, ptb_path, save_path,
 
                 # print for tracking
                 print("Pos Training Accuracy After Epoch %d :  %3f" % (i+1, pos_acc))
-                print("Chunk Training Accuracy After Epoch %d : %3f" % (i+1, chunk_F1))
+                print("Chunk Training F1 After Epoch %d : %3f" % (i+1, chunk_F1))
 
                 valid_loss, posp_v, chunkp_v, lmp_v, post_v, chunkt_v, lmt_v, pos_v_loss, chunk_v_loss, lm_v_loss = \
                     run_epoch(session, mValid, words_v, pos_v, chunk_v,

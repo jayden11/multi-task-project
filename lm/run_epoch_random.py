@@ -26,8 +26,8 @@ def run_epoch(session, m, conll_words, ptb_words, pos, ptb_pos, chunk, ptb_chunk
     # =====================================
     # Initialise variables
     # =====================================
-    conll_epoch_size = ((len(conll_words) // m.batch_size) - 1) // m.num_steps
-    ptb_epoch_size = ((len(ptb_words) // m.batch_size) - 1) // m.num_steps
+    conll_epoch_size = (len(conll_words) // (m.batch_size*m.num_steps))+1
+    ptb_epoch_size = (len(ptb_words) // (m.batch_size*m.num_steps))+1
     epoch_stats = {
         'comb_loss': 0.0,
         "pos_total_loss": 0.0,
