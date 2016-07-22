@@ -57,7 +57,7 @@ def import_embeddings(filename):
     with open(filename, 'rt', encoding='utf8') as csvfile:
         r = csv.reader(csvfile, delimiter=' ', quoting=csv.QUOTE_NONE)
         for row in r:
-            words[row[0]] = row[1:301]
+            words[row[0]] = row[1:]
     return words
 
 def _build_vocab(filename, ptb_filename, padding_width, col_val):
@@ -173,7 +173,8 @@ def raw_x_y_data(data_path, num_steps, ptb_data_path, embedding=False, embedding
         word_to_id = _build_vocab_embedding(comb_path, ptb_path, num_steps-1, 0, word_embedding_full)
         id_to_word = {v: k for k, v in word_to_id.items()}
         ordered_vocab = [id_to_word[i] for i in range(len(id_to_word))]
-        word_embedding = [word_embedding_full.get(key.lower(), np.random.randn(300))
+        embedding_len = len(word_embedding_full['the'])
+        word_embedding = [word_embedding_full.get(key.lower(), np.random.randn(embedding_len))
                                    for key in ordered_vocab]
     else:
         word_to_id = _build_vocab(comb_path, ptb_path, num_steps-1, 0)

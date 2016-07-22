@@ -26,7 +26,7 @@ class Config(object):
         self.learning_rate = 0.001 # learning_rate (if you are using SGD)
         self.max_grad_norm = 5 # for gradient clipping
         self.num_steps = int(num_steps) # length of sequence
-        self.word_embedding_size = 300 # size of the embedding (consistent with glove)
+        self.word_embedding_size = 50 # size of the embedding (consistent with glove)
         self.encoder_size = int(encoder_size) # first layer
         self.pos_decoder_size = int(pos_decoder_size) # second layer
         self.chunk_decoder_size = int(chunk_decoder_size) # second layer
