@@ -21,7 +21,7 @@ import saveload
 
 
 def run_epoch(session, m, conll_words, ptb_words, pos, ptb_pos, chunk, ptb_chunk, pos_vocab_size,
-            chunk_vocab_size, vocab_size, num_steps, num_batches_gold, verbose=False, valid=False, model_type='JOINT'):
+            chunk_vocab_size, vocab_size, num_steps, gold_embed, verbose=False, valid=False, model_type='JOINT'):
     """Runs the model on the given data."""
     # =====================================
     # Initialise variables
@@ -131,26 +131,12 @@ def run_epoch(session, m, conll_words, ptb_words, pos, ptb_pos, chunk, ptb_chunk
         print('conll epoch size: ' + str(conll_epoch_size))
         while (ptb_iter < ptb_epoch_size) or (conll_iter < conll_epoch_size):
             if np.random.rand(1) < m.mix_percent:
-                # an additional if statement to get the gold vs pred connections
-                if conll_iter > num_batches_gold:
-                    gold_percent = gold_percent * 0.8
-                else:
-                    gold_percent = 1
-                if np.random.rand(1) < gold_percent:
-                    gold_embed = 1
                 eval_op = m.joint_op
                 epoch_stats = train_batch(next(conll_batches), \
                     eval_op, "JOINT", epoch_stats, gold_embed, (conll_iter > conll_epoch_size))
                 conll_iter +=1
                 # print('conll iter: ' + str(conll_iter))
             else:
-                # an additional if statement to get the gold vs pred connections
-                if conll_iter > num_batches_gold:
-                    gold_percent = gold_percent * 0.8
-                else:
-                    gold_percent = 1
-                if np.random.rand(1) < gold_percent:
-                    gold_embed = 1
                 eval_op = m.lm_op
                 epoch_stats = train_batch(next(ptb_batches), \
                     eval_op, "LM", epoch_stats, gold_embed)

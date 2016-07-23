@@ -149,50 +149,36 @@ def main(model_type, dataset_path, ptb_path, save_path,
                 print(time.strftime("%Y-%m-%d %H:%M:%S", time.gmtime()))
 
                 print("Epoch: %d" % (i + 1))
-                if embedding == False:
-                    if config.random_mix == False:
-                        if config.ptb == True:
-                            _, _, _, _, _, _, _, _, _, _ = \
-                                run_epoch(session, m,
-                                          words_ptb, pos_ptb, chunk_ptb,
-                                          num_pos_tags, num_chunk_tags, vocab_size, num_steps,
-                                          verbose=True, model_type='LM')
-
-                        print(len(words_t))
-                        mean_loss, posp_t, chunkp_t, lmp_t, post_t, chunkt_t, lmt_t, pos_loss, chunk_loss, lm_loss = \
+                if config.random_mix == False:
+                    if config.ptb == True:
+                        _, _, _, _, _, _, _, _, _, _ = \
                             run_epoch(session, m,
-                                      words_t, pos_t, chunk_t,
+                                      words_ptb, pos_ptb, chunk_ptb,
                                       num_pos_tags, num_chunk_tags, vocab_size, num_steps,
-                                      verbose=True, model_type=model_type)
+                                      verbose=True, model_type='LM')
 
-                    else:
-                        mean_loss, posp_t, chunkp_t, lmp_t, post_t, chunkt_t, lmt_t, pos_loss, chunk_loss, lm_loss = \
-                            run_epoch_random.run_epoch(session, m,
-                                      words_t, words_ptb, pos_t, pos_ptb, chunk_t, chunk_ptb,
-                                      num_pos_tags, num_chunk_tags, vocab_size, num_steps, num_batches_gold,
-                                      verbose=True, model_type=model_type)
+
+                    mean_loss, posp_t, chunkp_t, lmp_t, post_t, chunkt_t, lmt_t, pos_loss, chunk_loss, lm_loss = \
+                        run_epoch(session, m,
+                                  words_t, pos_t, chunk_t,
+                                  num_pos_tags, num_chunk_tags, vocab_size, num_steps,
+                                  verbose=True, model_type=model_type)
+
                 else:
-                    if config.random_mix == False:
-                        if config.ptb == True:
-                            _, _, _, _, _, _, _, _, _, _ = \
-                                run_epoch(session, m,
-                                          words_ptb, pos_ptb, chunk_ptb,
-                                          num_pos_tags, num_chunk_tags, vocab_size, num_steps,
-                                          verbose=True, model_type='LM')
-
-
-                        mean_loss, posp_t, chunkp_t, lmp_t, post_t, chunkt_t, lmt_t, pos_loss, chunk_loss, lm_loss = \
-                            run_epoch(session, m,
-                                      words_t, pos_t, chunk_t,
-                                      num_pos_tags, num_chunk_tags, vocab_size, num_steps,
-                                      verbose=True, model_type=model_type)
-
+                    # an additional if statement to get the gold vs pred connections
+                    if i > num_batches_gold:
+                        gold_percent = gold_percent * 0.8
                     else:
-                        mean_loss, posp_t, chunkp_t, lmp_t, post_t, chunkt_t, lmt_t, pos_loss, chunk_loss, lm_loss = \
-                            run_epoch_random.run_epoch(session, m,
-                                      words_t, words_ptb, pos_t, pos_ptb, chunk_t, chunk_ptb,
-                                      num_pos_tags, num_chunk_tags, vocab_size, num_steps, num_batches_gold,
-                                      verbose=True, model_type=model_type)
+                        gold_percent = 1
+                    if np.random.rand(1) < gold_percent:
+                        gold_embed = 1
+                    else:
+                        gold_embed = 0
+                    mean_loss, posp_t, chunkp_t, lmp_t, post_t, chunkt_t, lmt_t, pos_loss, chunk_loss, lm_loss = \
+                        run_epoch_random.run_epoch(session, m,
+                                  words_t, words_ptb, pos_t, pos_ptb, chunk_t, chunk_ptb,
+                                  num_pos_tags, num_chunk_tags, vocab_size, num_steps, gold_embed,
+                                  verbose=True, model_type=model_type)
 
 
                 print('epoch finished')
@@ -332,12 +318,21 @@ def main(model_type, dataset_path, ptb_path, save_path,
 
             else:
                 print('Train Given Best Epoch Parameter :' + str(best_epoch[0]))
+                # an additional if statement to get the gold vs pred connections
+                if i > num_batches_gold:
+                    gold_percent = gold_percent * 0.8
+                else:
+                    gold_percent = 1
+                if np.random.rand(1) < gold_percent:
+                    gold_embed = 1
+                else:
+                    gold_embed = 0
                 for i in range(best_epoch[0]):
                     print("Epoch: %d" % (i + 1))
                     _, posp_c, chunkp_c, _, post_c, chunkt_c, _, _, _, _ = \
                         run_epoch_random.run_epoch(session, mTrain,
                                   words_c, words_ptb, pos_c, pos_ptb, chunk_c, chunk_ptb,
-                                  num_pos_tags, num_chunk_tags, vocab_size, num_steps, num_batches_gold,
+                                  num_pos_tags, num_chunk_tags, vocab_size, num_steps, gold_embed,
                                   verbose=True, model_type=model_type)
 
 
