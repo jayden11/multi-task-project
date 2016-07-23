@@ -50,7 +50,7 @@ def main(model_type, dataset_path, ptb_path, save_path,
     num_steps, encoder_size, pos_decoder_size, chunk_decoder_size, dropout,
     batch_size, pos_embedding_size, num_shared_layers, num_private_layers, chunk_embedding_size,
     lm_decoder_size, bidirectional, lstm, write_to_file, mix_percent,glove_path,max_epoch,
-    projection_size, embedding=False, test=False):
+    projection_size, num_batches_gold, embedding=False, test=False):
 
     """Main."""
     config = Config(num_steps, encoder_size, pos_decoder_size, chunk_decoder_size, dropout,
@@ -169,7 +169,7 @@ def main(model_type, dataset_path, ptb_path, save_path,
                         mean_loss, posp_t, chunkp_t, lmp_t, post_t, chunkt_t, lmt_t, pos_loss, chunk_loss, lm_loss = \
                             run_epoch_random.run_epoch(session, m,
                                       words_t, words_ptb, pos_t, pos_ptb, chunk_t, chunk_ptb,
-                                      num_pos_tags, num_chunk_tags, vocab_size, num_steps,
+                                      num_pos_tags, num_chunk_tags, vocab_size, num_steps, num_batches_gold,
                                       verbose=True, model_type=model_type)
                 else:
                     if config.random_mix == False:
@@ -191,7 +191,7 @@ def main(model_type, dataset_path, ptb_path, save_path,
                         mean_loss, posp_t, chunkp_t, lmp_t, post_t, chunkt_t, lmt_t, pos_loss, chunk_loss, lm_loss = \
                             run_epoch_random.run_epoch(session, m,
                                       words_t, words_ptb, pos_t, pos_ptb, chunk_t, chunk_ptb,
-                                      num_pos_tags, num_chunk_tags, vocab_size, num_steps,
+                                      num_pos_tags, num_chunk_tags, vocab_size, num_steps, num_batches_gold,
                                       verbose=True, model_type=model_type)
 
 
@@ -337,7 +337,7 @@ def main(model_type, dataset_path, ptb_path, save_path,
                     _, posp_c, chunkp_c, _, post_c, chunkt_c, _, _, _, _ = \
                         run_epoch_random.run_epoch(session, mTrain,
                                   words_c, words_ptb, pos_c, pos_ptb, chunk_c, chunk_ptb,
-                                  num_pos_tags, num_chunk_tags, vocab_size, num_steps,
+                                  num_pos_tags, num_chunk_tags, vocab_size, num_steps, num_batches_gold,
                                   verbose=True, model_type=model_type)
 
 
@@ -468,6 +468,7 @@ if __name__ == "__main__":
     parser.add_argument("--max_epoch")
     parser.add_argument("--test")
     parser.add_argument("--projection_size")
+    parser.add_argument("--num_gold")
     args = parser.parse_args()
     if (str(args.model_type) != "POS") and (str(args.model_type) != "CHUNK"):
         args.model_type = 'JOINT'
@@ -480,4 +481,5 @@ if __name__ == "__main__":
          int(args.pos_embedding_size), int(args.num_shared_layers), int(args.num_private_layers), \
          int(args.chunk_embedding_size), int(args.lm_decoder_size), \
          int(args.bidirectional), int(args.lstm), int(args.write_to_file), float(args.mix_percent), \
-         str(args.glove_path), int(args.max_epoch), int(args.projection_size),int(args.embedding),int(args.test))
+         str(args.glove_path), int(args.max_epoch), int(args.projection_size), \
+         int(args.num_gold),int(args.embedding),int(args.test))

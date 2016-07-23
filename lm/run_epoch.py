@@ -70,7 +70,8 @@ def run_epoch(session, m, words, pos, chunk, pos_vocab_size, chunk_vocab_size, v
                         {m.input_data: x,
                          m.pos_targets: y_pos,
                          m.chunk_targets: y_chunk,
-                         m.lm_targets: y_lm})
+                         m.lm_targets: y_lm,
+                         m.gold_embed: 0})
 
         comb_loss += joint_loss
         chunk_total_loss += chunk_loss

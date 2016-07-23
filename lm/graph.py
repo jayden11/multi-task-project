@@ -44,6 +44,8 @@ class Shared_Model(object):
         self.lm_targets = tf.placeholder(tf.float32, [(batch_size*num_steps),
                                             vocab_size])
 
+        self.gold_embed = tf.placeholder(tf.int32, shape=[], name="condition")
+
         def _shared_layer(input_data, config):
             """Build the model to decoding
 
@@ -442,11 +444,14 @@ class Shared_Model(object):
 
         # choose either argmax or dot product for pos embedding
         if config.argmax==1:
-            pos_to_chunk_embed = tf.nn.embedding_lookup(pos_embedding,pos_int_pred)
+            pos_to_chunk_embed = tf.cond(self.gold_embed > 0 , lambda: tf.matmul(self.pos_targets, pos_embedding),\
+            lambda: tf.nn.embedding_lookup(pos_embedding,pos_int_pred))
         else:
-            pos_to_chunk_embed = tf.matmul(tf.nn.softmax(pos_logits),pos_embedding)
+            pos_to_chunk_embed = tf.cond(self.gold_embed > 0 , lambda: tf.matmul(self.pos_targets, pos_embedding), \
+            lambda: tf.matmul(tf.nn.softmax(pos_logits),pos_embedding))
 
         chunk_logits = _chunk_private(encoding, pos_to_chunk_embed, config)
+
         chunk_loss, chunk_accuracy, chunk_int_pred, chunk_int_targ = _loss(chunk_logits, self.chunk_targets)
 
         self.chunk_loss = chunk_loss
@@ -455,11 +460,14 @@ class Shared_Model(object):
 
         # choose either argmax or dot product for chunk embedding
         if config.argmax==1:
-            chunk_to_lm_embed = tf.nn.embedding_lookup(chunk_embedding,chunk_int_pred)
+            chunk_to_lm_embed = tf.cond(self.gold_embed > 0, lambda: tf.matmul(self.chunk_targets, chunk_embedding), \
+            lambda: tf.nn.embedding_lookup(chunk_embedding,chunk_int_pred))
         else:
-            chunk_to_lm_embed = tf.matmul(tf.nn.softmax(chunk_logits),chunk_embedding)
+            chunk_to_lm_embed = tf.cond(self.gold_embed > 0, lambda: tf.matmul(tf.nn.softmax(chunk_logits),chunk_embedding), \
+            lambda: tf.nn.embedding_lookup(chunk_embedding,chunk_int_pred))
 
         lm_logits = _lm_private(encoding, chunk_to_lm_embed,  pos_to_chunk_embed, config)
+
         lm_loss, lm_accuracy, lm_int_pred, lm_int_targ = _loss(lm_logits, self.lm_targets)
 
         self.lm_loss = lm_loss
