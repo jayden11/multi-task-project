@@ -21,7 +21,7 @@ import saveload
 
 
 def run_epoch(session, m, conll_words, ptb_words, pos, ptb_pos, chunk, ptb_chunk, pos_vocab_size,
-            chunk_vocab_size, vocab_size, num_steps, verbose=False, valid=False, model_type='JOINT'):
+            chunk_vocab_size, vocab_size, num_steps, gold_embed, verbose=False, valid=False, model_type='JOINT'):
     """Runs the model on the given data."""
     # =====================================
     # Initialise variables
@@ -62,7 +62,7 @@ def run_epoch(session, m, conll_words, ptb_words, pos, ptb_pos, chunk, ptb_chunk
     # each data type in turn
     # ======================================================
 
-    def train_batch(batch, eval_op, model_type, epoch_stats, stop_write=False):
+    def train_batch(batch, eval_op, model_type, epoch_stats, gold_embed, stop_write=False):
         (x, y_pos, y_chunk, y_lm, sentence_lengths) = batch
 
         joint_loss, _, pos_int_pred, chunk_int_pred, lm_int_pred, pos_int_true, \
@@ -74,7 +74,8 @@ def run_epoch(session, m, conll_words, ptb_words, pos, ptb_pos, chunk, ptb_chunk
                          m.pos_targets: y_pos,
                          m.chunk_targets: y_chunk,
                          m.lm_targets: y_lm,
-                         m.sentence_lengths: sentence_lengths})
+                         m.sentence_lengths: sentence_lengths,
+                         m.gold_embed: gold_embed})
 
         epoch_stats["comb_loss"] += joint_loss
         epoch_stats["chunk_total_loss"] += chunk_loss
@@ -132,19 +133,15 @@ def run_epoch(session, m, conll_words, ptb_words, pos, ptb_pos, chunk, ptb_chunk
             if np.random.rand(1) < m.mix_percent:
                 eval_op = m.joint_op
                 epoch_stats = train_batch(next(conll_batches), \
-                    eval_op, "JOINT", epoch_stats, (conll_iter > conll_epoch_size))
+                    eval_op, "JOINT", epoch_stats, gold_embed, (conll_iter > conll_epoch_size))
                 conll_iter +=1
                 # print('conll iter: ' + str(conll_iter))
             else:
                 eval_op = m.lm_op
                 epoch_stats = train_batch(next(ptb_batches), \
-                    eval_op, "LM", epoch_stats)
+                    eval_op, "LM", epoch_stats, 0)
                 ptb_iter += 1
                 # print('ptb iter: ' + str(ptb_iter))
-        eval_op = m.joint_op
-        epoch_stats = train_batch(next(conll_batches), \
-            eval_op, "JOINT", epoch_stats, (conll_iter > conll_epoch_size))
-        conll_iter +=1
 
     return (epoch_stats["comb_loss"] / epoch_stats["iters"]), \
         epoch_stats["pos_predictions"], epoch_stats["chunk_predictions"], \

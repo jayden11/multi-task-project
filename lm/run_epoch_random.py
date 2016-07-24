@@ -139,7 +139,7 @@ def run_epoch(session, m, conll_words, ptb_words, pos, ptb_pos, chunk, ptb_chunk
             else:
                 eval_op = m.lm_op
                 epoch_stats = train_batch(next(ptb_batches), \
-                    eval_op, "LM", epoch_stats, gold_embed)
+                    eval_op, "LM", epoch_stats, 0)
                 ptb_iter += 1
                 # print('ptb iter: ' + str(ptb_iter))
 

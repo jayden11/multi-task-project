@@ -19,7 +19,7 @@ from graph import Shared_Model
 
 import saveload
 
-def run_epoch(session, m, words, pos, chunk, pos_vocab_size, chunk_vocab_size, vocab_size, num_steps,
+def run_epoch(session, m, words, pos, chunk, pos_vocab_size, chunk_vocab_size, vocab_size, num_steps, num_batches_gold,
               verbose=False, valid=False, model_type='JOINT'):
     """Runs the model on the given data."""
     epoch_size = ((len(words) // m.batch_size) + 1)
@@ -71,7 +71,8 @@ def run_epoch(session, m, words, pos, chunk, pos_vocab_size, chunk_vocab_size, v
                          m.pos_targets: y_pos,
                          m.chunk_targets: y_chunk,
                          m.lm_targets: y_lm,
-                         m.sentence_lengths: sentence_lengths})
+                         m.sentence_lengths: sentence_lengths,
+                         m.gold_embed: 0})
 
         comb_loss += joint_loss
         chunk_total_loss += chunk_loss
