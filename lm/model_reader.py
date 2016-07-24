@@ -186,7 +186,6 @@ def raw_x_y_data(data_path, ptb_data_path, num_steps, embedding=False, embedding
         id_to_word = {v: k for k, v in word_to_id.items()}
         ordered_vocab = [id_to_word[i] for i in range(len(id_to_word))]
         embedding_len = len(word_embedding_full['the'])
-        print(str(embedding_len))
         word_embedding = [word_embedding_full.get(key.lower(), np.random.rand(embedding_len))
                                    for key in ordered_vocab]
     else:
