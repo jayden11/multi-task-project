@@ -12,7 +12,7 @@ import pdb
 class Shared_Model(object):
 
     def __init__(self, config, is_training, num_pos_tags, num_chunk_tags,
-        vocab_size, num_steps, word_embedding):
+        vocab_size, num_steps, embedding_dim):
         """Initialisation
             basically set the self-variables up, so that we can call them
             as variables to the model.
@@ -432,8 +432,9 @@ class Shared_Model(object):
 
         self.sentence_lengths = sentence_lengths =  tf.placeholder(tf.int32, [batch_size])
 
-        word_embedding = word_embedding = tf.get_variable("word_embedding",
-                                            initializer=tf.constant(word_embedding), trainable=True)
+        word_embedding = word_embedding = tf.get_variable("word_embedding", [vocab_size, embedding_dim], trainable=True)
+        self.embedding_placeholder = tf.placeholder(tf.float32, [vocab_size, embedding_dim])
+        self.embedding_init = word_embedding.assign(self.embedding_placeholder)
 
         inputs = tf.nn.embedding_lookup(word_embedding, self.input_data)
 

@@ -26,7 +26,7 @@ class Config(object):
         self.learning_rate = 0.001 # learning_rate (if you are using SGD)
         self.max_grad_norm = 5 # for gradient clipping
         self.num_steps = int(num_steps) # length of sequence
-        self.word_embedding_size = 300 # size of the embedding (consistent with glove)
+        self.word_embedding_size = 50 # size of the embedding (consistent with glove)
         self.encoder_size = int(encoder_size) # first layer
         self.pos_decoder_size = int(pos_decoder_size) # second layer
         self.chunk_decoder_size = int(chunk_decoder_size) # second layer
@@ -103,17 +103,20 @@ def main(model_type, dataset_path, ptb_path, save_path,
             with tf.variable_scope("hyp_model", reuse=None, initializer=initializer):
                 m = Shared_Model(is_training=True, config=config, num_pos_tags=num_pos_tags,
                 num_chunk_tags=num_chunk_tags, vocab_size=vocab_size, num_steps=num_steps,
-                word_embedding=word_embedding)
+                embedding_dim=config.word_embedding_size)
 
             with tf.variable_scope("hyp_model", reuse=True, initializer=initializer):
                 mValid = Shared_Model(is_training=False, config=config, num_pos_tags=num_pos_tags,
                 num_chunk_tags=num_chunk_tags, vocab_size=vocab_size, num_steps=num_steps,
-                word_embedding=word_embedding)
+                embedding_dim=config.word_embedding_size)
 
 
             print('initialising most variables')
 
             tf.initialize_all_variables().run()
+            print('initialise word embedding')
+            session.run(m.embedding_init, {m.embedding_placeholder: word_embedding})
+            session.run(mValid.embedding_init, {mValid.embedding_placeholder: word_embedding})
 
             print('finding best epoch parameter')
             # ====================================
@@ -281,15 +284,18 @@ def main(model_type, dataset_path, ptb_path, save_path,
         with tf.variable_scope("final_model", reuse=None, initializer=initializer):
             mTrain = Shared_Model(is_training=True, config=config, num_pos_tags=num_pos_tags,
             num_chunk_tags=num_chunk_tags, vocab_size=vocab_size, num_steps=num_steps,
-            word_embedding=word_embedding)
+            embedding_dim=config.word_embedding_size)
 
         with tf.variable_scope("final_model", reuse=True, initializer=initializer):
             mTest = Shared_Model(is_training=False, config=config, num_pos_tags=num_pos_tags,
             num_chunk_tags=num_chunk_tags, vocab_size=vocab_size, num_steps=num_steps,
-            word_embedding=word_embedding)
+            embedding_dim=config.word_embedding_size)
 
-
+        print('initialising variables')
         tf.initialize_all_variables().run()
+        print('initialising word embeddings')
+        session.run(m.embedding_init, {m.embedding_placeholder: word_embedding})
+        session.run(mValid.embedding_init, {mValid.embedding_placeholder: word_embedding})
 
 
         if write_to_file == True:
