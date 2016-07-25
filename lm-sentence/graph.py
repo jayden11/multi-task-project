@@ -501,6 +501,8 @@ class Shared_Model(object):
             return
 
         reg_penalty = encoding_l2 + pos_l2 + chunk_l2 + lm_l2 + input_l2
+        reg_penalty = tf.Print(reg_penalty,[reg_penalty],'weight')
+
 
         self.pos_op = _training(pos_loss + pos_l2, config, self)
         self.chunk_op = _training(chunk_loss + chunk_l2, config, self)
