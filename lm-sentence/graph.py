@@ -195,8 +195,9 @@ class Shared_Model(object):
 
                 softmax_b = tf.get_variable("softmax_b", [num_pos_tags])
                 logits = tf.matmul(output, softmax_w) + softmax_b
+                l2_penalty = tf.reduce_sum(tf.square(output))
 
-            return logits, output
+            return logits, output, l2_penalty
 
         def _chunk_private(encoder_units, pos_prediction, pos_hidden, config):
             """Decode model for chunks
@@ -286,8 +287,9 @@ class Shared_Model(object):
 
                 softmax_b = tf.get_variable("softmax_b", [num_chunk_tags])
                 logits = tf.matmul(output, softmax_w) + softmax_b
+                l2_penalty = tf.reduce_sum(tf.square(output))
 
-            return logits, output
+            return logits, output, l2_penalty
 
         def _lm_private(encoder_units, pos_prediction, chunk_prediction, pos_hidden, chunk_hidden, config):
             """Decode model for lm
@@ -381,8 +383,9 @@ class Shared_Model(object):
 
                 softmax_b = tf.get_variable("softmax_b", [vocab_size])
                 logits = tf.matmul(output, softmax_w) + softmax_b
+                l2_penalty = tf.reduce_sum(tf.square(output))
 
-            return logits
+            return logits, l2_penalty
 
         def _loss(logits, labels):
             """Calculate loss for both pos and chunk
@@ -392,12 +395,11 @@ class Shared_Model(object):
                 returns:
                     loss as tensor of type float
             """
-            l2 = tf.reduce_mean(tf.square(tf.nn.softmax(logits,name='softmax')))
 
             cross_entropy = tf.nn.softmax_cross_entropy_with_logits(logits,
                                                                     labels,
                                                                     name='xentropy')
-            loss = tf.reduce_mean(cross_entropy, name='xentropy_mean') + l2
+            loss = tf.reduce_mean(cross_entropy, name='xentropy_mean')
             (_, int_targets) = tf.nn.top_k(labels, 1)
             (_, int_predictions) = tf.nn.top_k(logits, 1)
             num_true = tf.reduce_sum(tf.cast(tf.equal(int_targets, int_predictions), tf.float32))
@@ -438,6 +440,8 @@ class Shared_Model(object):
 
         inputs = tf.nn.embedding_lookup(word_embedding, self.input_data)
 
+        input_l2 = tf.reduce_sum(inputs)
+
         self.pos_embedding = pos_embedding = tf.get_variable("pos_embedding",
             [num_pos_tags, pos_embedding_size])
         self.chunk_embedding = chunk_embedding = tf.get_variable("chunk_embedding",
@@ -450,8 +454,9 @@ class Shared_Model(object):
 
         encoding = tf.pack(encoding)
         encoding = tf.transpose(encoding, perm=[1, 0, 2])
+        encoding_l2 = tf.reduce_sum(encoding)
 
-        pos_logits, pos_hidden = _pos_private(encoding, config)
+        pos_logits, pos_hidden, pos_l2 = _pos_private(encoding, config)
 
         pos_loss, pos_accuracy, pos_int_pred, pos_int_targ = _loss(pos_logits, self.pos_targets)
         self.pos_loss = pos_loss
@@ -468,7 +473,7 @@ class Shared_Model(object):
             pos_to_chunk_embed = tf.cond(self.gold_embed > 0 , lambda: tf.matmul(self.pos_targets, pos_embedding), \
             lambda: tf.matmul(tf.nn.softmax(pos_logits),pos_embedding))
 
-        chunk_logits, chunk_hidden = _chunk_private(encoding, pos_to_chunk_embed, pos_hidden, config)
+        chunk_logits, chunk_hidden, chunk_l2 = _chunk_private(encoding, pos_to_chunk_embed, pos_hidden, config)
 
         chunk_loss, chunk_accuracy, chunk_int_pred, chunk_int_targ = _loss(chunk_logits, self.chunk_targets)
 
@@ -484,7 +489,7 @@ class Shared_Model(object):
             chunk_to_lm_embed = tf.cond(self.gold_embed > 0, lambda: tf.matmul(tf.nn.softmax(chunk_logits),chunk_embedding), \
             lambda: tf.nn.embedding_lookup(chunk_embedding,chunk_int_pred))
 
-        lm_logits = _lm_private(encoding, chunk_to_lm_embed,  pos_to_chunk_embed, chunk_hidden, pos_hidden, config)
+        lm_logits, lm_l2 = _lm_private(encoding, chunk_to_lm_embed,  pos_to_chunk_embed, chunk_hidden, pos_hidden, config)
         lm_loss, lm_accuracy, lm_int_pred, lm_int_targ = _loss(lm_logits, self.lm_targets)
 
         self.lm_loss = lm_loss
@@ -495,7 +500,10 @@ class Shared_Model(object):
         if not is_training:
             return
 
-        self.pos_op = _training(pos_loss, config, self)
-        self.chunk_op = _training(chunk_loss, config, self)
-        self.lm_op = _training(lm_loss, config, self)
-        self.joint_op = _training((chunk_loss + pos_loss + lm_loss)/3, config, self)
+        reg_penalty = encoding_l2 + pos_l2 + chunk_l2 + lm_l2 + input_l2
+
+        self.pos_op = _training(pos_loss + pos_l2, config, self)
+        self.chunk_op = _training(chunk_loss + chunk_l2, config, self)
+        self.lm_op = _training((1-config.reg_weight)*(lm_loss) + config.reg_weight*reg_penalty, config, self)
+        self.joint_op = _training((1-config.reg_weight)*(chunk_loss + pos_loss + lm_loss )/3 + \
+                                    config.reg_weight*reg_penalty, config, self)

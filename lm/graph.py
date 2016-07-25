@@ -107,6 +107,8 @@ class Shared_Model(object):
                                                           initial_state=initial_state,
                                                           scope="encoder_rnn")
 
+                encoder_penalty = tf.reduce_sum(encoder_outputs)
+
             return encoder_outputs
 
         def _pos_private(encoder_units, config):

@@ -23,5 +23,4 @@ python3 run_model.py --model_type "JOINT" \
                      --write_to_file 0 \
                      --embedding 1 \
                      --max_epoch 1 \
-                     --test 0 \
-                     --projection_size 300
+                     --test 0 

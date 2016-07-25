@@ -20,7 +20,7 @@ import sklearn
 class Config(object):
     def __init__(self, num_steps, encoder_size, pos_decoder_size, chunk_decoder_size,
     dropout, batch_size, pos_embedding_size, num_shared_layers, num_private_layers, chunk_embedding_size,
-    lm_decoder_size, bidirectional, lstm, mix_percent, max_epoch):
+    lm_decoder_size, bidirectional, lstm, mix_percent, max_epoch, reg_weight):
         """Configuration for the network"""
         self.init_scale = 0.1 # initialisation scale
         self.learning_rate = 0.001 # learning_rate (if you are using SGD)
@@ -45,16 +45,18 @@ class Config(object):
         self.lstm = lstm
         self.bidirectional = bidirectional
         self.mix_percent = mix_percent
+        self.reg_weight = reg_weight
 
 def main(model_type, dataset_path, ptb_path, save_path,
     num_steps, encoder_size, pos_decoder_size, chunk_decoder_size, dropout,
     batch_size, pos_embedding_size, num_shared_layers, num_private_layers, chunk_embedding_size,
-    lm_decoder_size, bidirectional, lstm, write_to_file, mix_percent,glove_path,max_epoch, num_batches_gold, embedding=False, test=False):
+    lm_decoder_size, bidirectional, lstm, write_to_file, mix_percent,glove_path,max_epoch, num_batches_gold, \
+    reg_weight, embedding=False, test=False):
 
     """Main."""
     config = Config(num_steps, encoder_size, pos_decoder_size, chunk_decoder_size, dropout,
     batch_size, pos_embedding_size, num_shared_layers, num_private_layers, chunk_embedding_size,
-    lm_decoder_size, bidirectional, lstm, mix_percent, max_epoch)
+    lm_decoder_size, bidirectional, lstm, mix_percent, max_epoch, reg_weight)
 
     raw_data_path = dataset_path + '/data'
     raw_data = reader.raw_x_y_data(
@@ -294,8 +296,8 @@ def main(model_type, dataset_path, ptb_path, save_path,
         print('initialising variables')
         tf.initialize_all_variables().run()
         print('initialising word embeddings')
-        session.run(mTrain.embedding_init, {m.embedding_placeholder: word_embedding})
-        session.run(mTest.embedding_init, {mValid.embedding_placeholder: word_embedding})
+        session.run(mTrain.embedding_init, {mTrain.embedding_placeholder: word_embedding})
+        session.run(mTest.embedding_init, {mTest.embedding_placeholder: word_embedding})
 
 
         if write_to_file == True:
@@ -464,6 +466,7 @@ if __name__ == "__main__":
     parser.add_argument("--max_epoch")
     parser.add_argument("--test")
     parser.add_argument("--num_gold")
+    parser.add_argument("--reg_weight")
     args = parser.parse_args()
     if (str(args.model_type) != "POS") and (str(args.model_type) != "CHUNK"):
         args.model_type = 'JOINT'
@@ -476,4 +479,4 @@ if __name__ == "__main__":
          int(args.pos_embedding_size), int(args.num_shared_layers), int(args.num_private_layers), \
          int(args.chunk_embedding_size), int(args.lm_decoder_size), \
          int(args.bidirectional), int(args.lstm), int(args.write_to_file), float(args.mix_percent), \
-         str(args.glove_path), int(args.max_epoch), int(args.num_gold), int(args.embedding),int(args.test))
+         str(args.glove_path), int(args.max_epoch), int(args.num_gold), float(args.reg_weight), int(args.embedding),int(args.test))
