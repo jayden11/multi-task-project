@@ -37,8 +37,11 @@ def run_epoch(session, m, words, pos, chunk, pos_vocab_size, chunk_vocab_size, v
     lm_predictions = []
     lm_true = []
 
-    for step, (x, y_pos, y_chunk, y_lm, sentence_lengths) in enumerate(reader.create_batches(words, pos, chunk, m.batch_size,
-                                               m.num_steps, pos_vocab_size, chunk_vocab_size, vocab_size)):
+    batches = reader.create_batches(words, pos, chunk, m.batch_size,
+                                               m.num_steps, pos_vocab_size, chunk_vocab_size, vocab_size)
+
+    for step in range(epoch_size):
+        (x, y_pos, y_chunk, y_lm, sentence_lengths) = next(batches)
 
         if model_type == 'POS':
             if valid:

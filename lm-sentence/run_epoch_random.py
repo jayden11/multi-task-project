@@ -125,7 +125,7 @@ def run_epoch(session, m, conll_words, ptb_words, pos, ptb_pos, chunk, ptb_chunk
     if valid:
         eval_op = tf.no_op()
         for i in range(conll_epoch_size):
-            train_batch(next(conll_batches), i, eval_op, "JOINT", epoch_stats)
+            train_batch(next(conll_batches), eval_op, "JOINT", epoch_stats)
     else:
         print('ptb epoch size: ' + str(ptb_epoch_size))
         print('conll epoch size: ' + str(conll_epoch_size))
