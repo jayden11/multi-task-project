@@ -107,8 +107,6 @@ class Shared_Model(object):
                                                           initial_state=initial_state,
                                                           scope="encoder_rnn")
 
-                encoder_penalty = tf.reduce_sum(encoder_outputs)
-
             return encoder_outputs
 
         def _pos_private(encoder_units, config):
@@ -192,8 +190,9 @@ class Shared_Model(object):
 
                 softmax_b = tf.get_variable("softmax_b", [num_pos_tags])
                 logits = tf.matmul(output, softmax_w) + softmax_b
+                l2_penalty = tf.reduce_sum(tf.square(output))
 
-            return logits
+            return logits, l2_penalty
 
         def _chunk_private(encoder_units, pos_prediction, config):
             """Decode model for chunks
@@ -280,8 +279,9 @@ class Shared_Model(object):
 
                 softmax_b = tf.get_variable("softmax_b", [num_chunk_tags])
                 logits = tf.matmul(output, softmax_w) + softmax_b
+                l2_penalty = tf.reduce_sum(tf.square(output))
 
-            return logits
+            return logits, l2_penalty
 
         def _lm_private(encoder_units, pos_prediction, chunk_prediction, config):
             """Decode model for lm
@@ -369,8 +369,9 @@ class Shared_Model(object):
 
                 softmax_b = tf.get_variable("softmax_b", [vocab_size])
                 logits = tf.matmul(output, softmax_w) + softmax_b
+                l2_penalty = tf.reduce_sum(tf.square(output))
 
-            return logits
+            return logits, l2_penalty
 
         def _loss(logits, labels):
             """Calculate loss for both pos and chunk
@@ -416,13 +417,12 @@ class Shared_Model(object):
             train_op = optimizer.apply_gradients(zip(grads, tvars))
             return train_op
 
-        word_embedding = word_embedding = tf.get_variable("word_embedding",
-                                            initializer=tf.constant(word_embedding), trainable=True)
-
+        word_embedding = word_embedding = tf.get_variable("word_embedding", [vocab_size, word_embedding_size], trainable=True)
+        self.embedding_placeholder = tf.placeholder(tf.float32, [vocab_size, word_embedding_size])
+        self.embedding_init = word_embedding.assign(self.embedding_placeholder)
 
         inputs = tf.nn.embedding_lookup(word_embedding, self.input_data)
-
-
+        input_l2 = tf.reduce_sum(inputs)
 
         self.pos_embedding = pos_embedding = tf.get_variable("pos_embedding",
             [num_pos_tags, pos_embedding_size])
@@ -436,8 +436,9 @@ class Shared_Model(object):
 
         encoding = tf.pack(encoding)
         encoding = tf.transpose(encoding, perm=[1, 0, 2])
+        encoding_l2 = tf.reduce_sum(encoding)
 
-        pos_logits = _pos_private(encoding, config)
+        pos_logits, pos_l2 = _pos_private(encoding, config)
         pos_loss, pos_accuracy, pos_int_pred, pos_int_targ = _loss(pos_logits, self.pos_targets)
         self.pos_loss = pos_loss
 
@@ -452,7 +453,7 @@ class Shared_Model(object):
             pos_to_chunk_embed = tf.cond(self.gold_embed > 0 , lambda: tf.matmul(self.pos_targets, pos_embedding), \
             lambda: tf.matmul(tf.nn.softmax(pos_logits),pos_embedding))
 
-        chunk_logits = _chunk_private(encoding, pos_to_chunk_embed, config)
+        chunk_logits, chunk_l2 = _chunk_private(encoding, pos_to_chunk_embed, config)
 
         chunk_loss, chunk_accuracy, chunk_int_pred, chunk_int_targ = _loss(chunk_logits, self.chunk_targets)
 
@@ -468,7 +469,7 @@ class Shared_Model(object):
             chunk_to_lm_embed = tf.cond(self.gold_embed > 0, lambda: tf.matmul(tf.nn.softmax(chunk_logits),chunk_embedding), \
             lambda: tf.nn.embedding_lookup(chunk_embedding,chunk_int_pred))
 
-        lm_logits = _lm_private(encoding, chunk_to_lm_embed,  pos_to_chunk_embed, config)
+        lm_logits, lm_l2 = _lm_private(encoding, chunk_to_lm_embed,  pos_to_chunk_embed, config)
 
         lm_loss, lm_accuracy, lm_int_pred, lm_int_targ = _loss(lm_logits, self.lm_targets)
 
@@ -481,7 +482,9 @@ class Shared_Model(object):
         if not is_training:
             return
 
+        total_l2 = lm_l2 + pos_l2 + chunk_l2 + encoding_l2 + input_l2
+
         self.pos_op = _training(pos_loss, config, self)
         self.chunk_op = _training(chunk_loss, config, self)
         self.lm_op = _training(lm_loss, config, self)
-        self.joint_op = _training((chunk_loss + pos_loss + lm_loss)/3, config, self)
+        self.joint_op = _training((chunk_loss + pos_loss + lm_loss)/3 + config.reg_weight*total_l2, config, self)

@@ -25,4 +25,6 @@ python3 run_model.py --model_type "JOINT" \
                      --max_epoch 1 \
 		                 --test 0 \
 		                 --projection_size 100 \
-                     --num_gold 15
+                     --num_gold 15 \
+                     --reg_weight 0.01 \
+                     --word_embedding_size 50

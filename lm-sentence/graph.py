@@ -27,7 +27,6 @@ class Shared_Model(object):
         self.num_pos_tags = num_pos_tags
         self.num_chunk_tags = num_chunk_tags
         self.input_data = tf.placeholder(tf.int32, [batch_size, num_steps])
-        self.word_embedding_size = word_embedding_size = config.word_embedding_size
         self.pos_embedding_size = pos_embedding_size = config.pos_embedding_size
         self.chunk_embedding_size = chunk_embedding_size = config.chunk_embedding_size
         self.num_shared_layers = num_shared_layers = config.num_shared_layers

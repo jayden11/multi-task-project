@@ -20,13 +20,13 @@ import sklearn
 class Config(object):
     def __init__(self, num_steps, encoder_size, pos_decoder_size, chunk_decoder_size,
     dropout, batch_size, pos_embedding_size, num_shared_layers, num_private_layers, chunk_embedding_size,
-    lm_decoder_size, bidirectional, lstm, mix_percent, max_epoch):
+    lm_decoder_size, bidirectional, lstm, mix_percent, max_epoch, reg_weight, word_embedding_size):
         """Configuration for the network"""
         self.init_scale = 0.1 # initialisation scale
         self.learning_rate = 0.001 # learning_rate (if you are using SGD)
         self.max_grad_norm = 5 # for gradient clipping
         self.num_steps = int(num_steps) # length of sequence
-        self.word_embedding_size = 50 # size of the embedding (consistent with glove)
+        self.word_embedding_size = word_embedding_size # size of the embedding (consistent with glove)
         self.encoder_size = int(encoder_size) # first layer
         self.pos_decoder_size = int(pos_decoder_size) # second layer
         self.chunk_decoder_size = int(chunk_decoder_size) # second layer
@@ -45,17 +45,18 @@ class Config(object):
         self.lstm = lstm
         self.bidirectional = bidirectional
         self.mix_percent = mix_percent
+        self.reg_weight = reg_weight
 
 def main(model_type, dataset_path, ptb_path, save_path,
     num_steps, encoder_size, pos_decoder_size, chunk_decoder_size, dropout,
     batch_size, pos_embedding_size, num_shared_layers, num_private_layers, chunk_embedding_size,
     lm_decoder_size, bidirectional, lstm, write_to_file, mix_percent,glove_path,max_epoch,
-    projection_size, num_batches_gold, embedding=False, test=False):
+    projection_size, num_batches_gold, reg_weight, word_embedding_size, embedding=False, test=False):
 
     """Main."""
     config = Config(num_steps, encoder_size, pos_decoder_size, chunk_decoder_size, dropout,
     batch_size, pos_embedding_size, num_shared_layers, num_private_layers, chunk_embedding_size,
-    lm_decoder_size, bidirectional, lstm, mix_percent, max_epoch)
+    lm_decoder_size, bidirectional, lstm, mix_percent, max_epoch, reg_weight, word_embedding_size)
 
     raw_data_path = dataset_path + '/data'
     raw_data = reader.raw_x_y_data(
@@ -116,6 +117,10 @@ def main(model_type, dataset_path, ptb_path, save_path,
             print('initialising variables')
 
             tf.initialize_all_variables().run()
+
+            print("initialise word vectors")
+            session.run(m.embedding_init, {m.embedding_placeholder: word_embedding})
+            session.run(mValid.embedding_init, {mValid.embedding_placeholder: word_embedding})
 
             print('finding best epoch parameter')
             # ====================================
@@ -293,8 +298,11 @@ def main(model_type, dataset_path, ptb_path, save_path,
             num_chunk_tags=num_chunk_tags, vocab_size=vocab_size,
             word_embedding=word_embedding, projection_size=projection_size)
 
-
+        print("initialise variables")
         tf.initialize_all_variables().run()
+        print("initialise word embeddings")
+        session.run(mTrain.embedding_init, {mTrain.embedding_placeholder: word_embedding})
+        session.run(mTest.embedding_init, {mTest.embedding_placeholder: word_embedding})
 
 
         if write_to_file == True:
@@ -464,6 +472,8 @@ if __name__ == "__main__":
     parser.add_argument("--test")
     parser.add_argument("--projection_size")
     parser.add_argument("--num_gold")
+    parser.add_argument("--reg_weight")
+    parser.add_argument("--word_embedding_size")
     args = parser.parse_args()
     if (str(args.model_type) != "POS") and (str(args.model_type) != "CHUNK"):
         args.model_type = 'JOINT'
@@ -477,4 +487,4 @@ if __name__ == "__main__":
          int(args.chunk_embedding_size), int(args.lm_decoder_size), \
          int(args.bidirectional), int(args.lstm), int(args.write_to_file), float(args.mix_percent), \
          str(args.glove_path), int(args.max_epoch), int(args.projection_size), \
-         int(args.num_gold),int(args.embedding),int(args.test))
+         int(args.num_gold),float(args.reg_weight), int(args.word_embedding_size), int(args.embedding),int(args.test))
