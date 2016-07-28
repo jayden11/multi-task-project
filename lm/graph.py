@@ -417,31 +417,59 @@ class Shared_Model(object):
             train_op = optimizer.apply_gradients(zip(grads, tvars))
             return train_op
 
-        word_embedding = word_embedding = tf.get_variable("word_embedding", [vocab_size, word_embedding_size], trainable=True)
+
+        def input_projection3D(input3D, projection_size):
+
+            hidden = input3D.get_shape()[2].value
+            steps = input3D.get_shape()[1].value
+            if hidden < projection_size : print("WARNING - projecting to higher dimension than original embeddings")
+            inputs = tf.reshape(input3D, [-1, steps, 1, hidden]) # now shape (batch, num_steps, 1, hidden_size)
+            W_proj = tf.get_variable("W_proj", [1,1,hidden, projection_size])
+            b_proj = tf.get_variable("b_proj", [projection_size])
+
+            projection = tf.nn.conv2d(inputs, W_proj, [1,1,1,1], "SAME")
+            projection = tf.tanh(tf.nn.bias_add(projection,b_proj))
+            return tf.reshape(projection, [-1, steps,projection_size])
+
+
+        #################################################################
+        # Section 2: Construct the graph from the functions defined above
+        # ==============================================================
+        # Awesome sauce
+        ################################################################
+
+        # Read in the embeddings in a memory efficient manner
+        word_embedding = word_embedding = tf.get_variable("word_embedding", [vocab_size, word_embedding_size], trainable=False)
         self.embedding_placeholder = tf.placeholder(tf.float32, [vocab_size, word_embedding_size])
         self.embedding_init = word_embedding.assign(self.embedding_placeholder)
 
+        # get the embeddings
         inputs = tf.nn.embedding_lookup(word_embedding, self.input_data)
-        input_l2 = tf.reduce_sum(inputs)
+        inputs = input_projection3D(inputs, projection_size) # put them through a projections
+        input_l2 = tf.reduce_sum(inputs) # sum them up for the regulariser
 
+        # get the pos and chunk embeddings
         self.pos_embedding = pos_embedding = tf.get_variable("pos_embedding",
             [num_pos_tags, pos_embedding_size])
         self.chunk_embedding = chunk_embedding = tf.get_variable("chunk_embedding",
             [num_chunk_tags, chunk_embedding_size])
 
+        # add dropout if training
         if is_training and config.keep_prob < 1:
             inputs = tf.nn.dropout(inputs, config.keep_prob)
 
+        # create the shared layer (called the encoding)
         encoding = _shared_layer(inputs, config)
-
         encoding = tf.pack(encoding)
         encoding = tf.transpose(encoding, perm=[1, 0, 2])
-        encoding_l2 = tf.reduce_sum(encoding)
+        encoding_l2 = tf.reduce_sum(encoding) # for the regulariser
 
+        # create the pos layer
         pos_logits, pos_l2 = _pos_private(encoding, config)
         pos_loss, pos_accuracy, pos_int_pred, pos_int_targ = _loss(pos_logits, self.pos_targets)
-        self.pos_loss = pos_loss
 
+        # expose these values to the world
+        self.pos_loss = pos_loss
         self.pos_int_pred = pos_int_pred
         self.pos_int_targ = pos_int_targ
 
@@ -453,10 +481,10 @@ class Shared_Model(object):
             pos_to_chunk_embed = tf.cond(self.gold_embed > 0 , lambda: tf.matmul(self.pos_targets, pos_embedding), \
             lambda: tf.matmul(tf.nn.softmax(pos_logits),pos_embedding))
 
+        # create the chunk layer
         chunk_logits, chunk_l2 = _chunk_private(encoding, pos_to_chunk_embed, config)
-
         chunk_loss, chunk_accuracy, chunk_int_pred, chunk_int_targ = _loss(chunk_logits, self.chunk_targets)
-
+        # expose the values to the world
         self.chunk_loss = chunk_loss
         self.chunk_int_pred = chunk_int_pred
         self.chunk_int_targ = chunk_int_targ
@@ -469,19 +497,20 @@ class Shared_Model(object):
             chunk_to_lm_embed = tf.cond(self.gold_embed > 0, lambda: tf.matmul(tf.nn.softmax(chunk_logits),chunk_embedding), \
             lambda: tf.nn.embedding_lookup(chunk_embedding,chunk_int_pred))
 
+        # create the LM layer
         lm_logits, lm_l2 = _lm_private(encoding, chunk_to_lm_embed,  pos_to_chunk_embed, config)
-
         lm_loss, lm_accuracy, lm_int_pred, lm_int_targ = _loss(lm_logits, self.lm_targets)
-
+        # expose these values to the world
         self.lm_loss = lm_loss
         self.lm_int_pred = lm_int_pred
         self.lm_int_targ = lm_int_targ
 
+        # define the joint loss
         self.joint_loss = (chunk_loss + pos_loss + lm_loss)/3
-
         if not is_training:
             return
 
+        # define the regulariser parameters
         total_l2 = lm_l2 + pos_l2 + chunk_l2 + encoding_l2 + input_l2
 
         self.pos_op = _training(pos_loss, config, self)

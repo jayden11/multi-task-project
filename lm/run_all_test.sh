@@ -5,7 +5,7 @@ python3 run_model.py --model_type "JOINT" \
                      --dataset_path "../../data/conll_toy" \
                      --ptb_path "../../data/conll_toy" \
                      --save_path "../../data/outputs/test" \
-                     --glove_path '../../data/senna/senna.txt' \
+                     --glove_path '../../data/glove.6B/glove.6B.300d.txt' \
                      --num_steps 20 \
                      --encoder_size 200 \
                      --pos_decoder_size 200 \
@@ -27,4 +27,4 @@ python3 run_model.py --model_type "JOINT" \
 		                 --projection_size 100 \
                      --num_gold 15 \
                      --reg_weight 0.01 \
-                     --word_embedding_size 50
+                     --word_embedding_size 300
