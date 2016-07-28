@@ -216,9 +216,10 @@ def main(model_type, dataset_path, ptb_path, save_path,
                 print("Chunk Training F1 After Epoch %d : %3f" % (i+1, chunk_F1))
 
                 valid_loss, posp_v, chunkp_v, lmp_v, post_v, chunkt_v, lmt_v, pos_v_loss, chunk_v_loss, lm_v_loss = \
-                    run_epoch(session, mValid, words_v, pos_v, chunk_v,
-                              num_pos_tags, num_chunk_tags, vocab_size, num_steps,
-                              verbose=True, valid=True, model_type=model_type)
+                    run_epoch_random.run_epoch(session, mValid,
+                              words_v, words_ptb, pos_v, pos_ptb, chunk_v, chunk_ptb,
+                              num_pos_tags, num_chunk_tags, vocab_size, num_steps, num_batches_gold,
+                              verbose=True,  model_type=model_type, valid=True)
 
                 # Save loss for charts
                 valid_loss_stats = np.append(valid_loss_stats, valid_loss)
@@ -337,12 +338,11 @@ def main(model_type, dataset_path, ptb_path, save_path,
 
 
             print('Getting Testing Predictions')
-            _, posp_test, chunkp_test, _, post_test, chunkt_test, _, _, _, _ = \
-                run_epoch(session, mTest,
-                          words_test, pos_test, chunk_test,
-                          num_pos_tags, num_chunk_tags, vocab_size, num_steps,
-                          verbose=True, valid=True, model_type=model_type)
-
+            test_loss, posp_test, chunkp_test, lmp_test, post_test, chunkt_test, lmt_test, pos_test_loss, chunk_test_loss, lm_test_loss = \
+                run_epoch_random.run_epoch(session, mTest,
+                          words_test, words_ptb, pos_test, pos_ptb, chunk_test, chunk_ptb,
+                          num_pos_tags, num_chunk_tags, vocab_size, num_steps, num_batches_gold,
+                          verbose=True,  model_type=model_type, valid=True)
 
             print('Writing Predictions')
             # prediction reshaping

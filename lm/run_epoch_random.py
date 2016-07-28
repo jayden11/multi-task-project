@@ -26,7 +26,7 @@ def run_epoch(session, m, conll_words, ptb_words, pos, ptb_pos, chunk, ptb_chunk
     # =====================================
     # Initialise variables
     # =====================================
-    conll_epoch_size = (len(conll_words) // (m.batch_size*m.num_steps))+1
+    conll_epoch_size = (len(conll_words) // (m.batch_size*num_steps))+1
     ptb_epoch_size = (len(ptb_words) // (m.batch_size*m.num_steps))+1
     epoch_stats = {
         'comb_loss': 0.0,
@@ -45,7 +45,6 @@ def run_epoch(session, m, conll_words, ptb_words, pos, ptb_pos, chunk, ptb_chunk
 
 
     print('creating batches')
-
     conll_batches = reader.create_batches(conll_words, pos, chunk, m.batch_size,
                             m.num_steps, pos_vocab_size, chunk_vocab_size, vocab_size, continuing=True)
 
@@ -125,7 +124,7 @@ def run_epoch(session, m, conll_words, ptb_words, pos, ptb_pos, chunk, ptb_chunk
     if valid:
         eval_op = tf.no_op()
         for i in range(conll_epoch_size):
-            train_batch(next(conll_batches), eval_op, "JOINT", epoch_stats)
+            train_batch(next(conll_batches), eval_op, "JOINT", epoch_stats, 0)
     else:
         print('ptb epoch size: ' + str(ptb_epoch_size))
         print('conll epoch size: ' + str(conll_epoch_size))

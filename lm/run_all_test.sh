@@ -11,7 +11,7 @@ python3 run_model.py --model_type "JOINT" \
                      --pos_decoder_size 200 \
                      --chunk_decoder_size 200 \
                      --dropout 0.5 \
-                     --batch_size 64 \
+                     --batch_size 32 \
                      --pos_embedding_size 400 \
                      --num_shared_layers 1 \
                      --num_private_layers 1 \
