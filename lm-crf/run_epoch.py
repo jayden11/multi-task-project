@@ -15,7 +15,7 @@ from tensorflow.models.rnn import rnn
 import lm_model_reader as reader
 import numpy as np
 import pdb
-from graph import Shared_Model
+from main_graph import Shared_Model
 
 import saveload
 

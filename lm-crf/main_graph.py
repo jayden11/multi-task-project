@@ -7,10 +7,10 @@ import tensorflow as tf
 from tensorflow.models.rnn import rnn_cell
 from tensorflow.models.rnn import rnn
 
-from pos_graph import pos_private
-from shared_graph import shared_layer
-from lm_graph import lm_private
-from chunk_graph import chunk_private
+from sub_graphs.chunk_graph import chunk_private
+from sub_graphs.pos_graph import pos_private
+from sub_graphs.shared_graph import shared_layer
+from sub_graphs.lm_graph import lm_private
 
 
 import pdb
@@ -48,11 +48,8 @@ class Shared_Model(object):
                                             num_chunk_tags])
         self.lm_targets = tf.placeholder(tf.float32, [(batch_size*num_steps),
                                             vocab_size])
-        # this is a flag for whether you use the gold pos and chunk for lm or not
-        self.gold_embed = tf.placeholder(tf.int32, shape=[], name="condition")
 
-        # create a placeholder for the learning rate
-        self.learning_rate = tf.placeholder(tf.float32, shape=[], name="learning_rate")
+        self.gold_embed = tf.placeholder(tf.int32, shape=[], name="condition")
 
 
 
@@ -96,7 +93,7 @@ class Shared_Model(object):
             tvars = tf.trainable_variables()
             grads, _ = tf.clip_by_global_norm(tf.gradients(loss, tvars),
                                               config.max_grad_norm)
-            optimizer = tf.train.AdagradOptimizer(self.learning_rate)
+            optimizer = tf.train.AdamOptimizer()
             train_op = optimizer.apply_gradients(zip(grads, tvars))
             return train_op
 

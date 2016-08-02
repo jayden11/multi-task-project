@@ -15,13 +15,13 @@ from tensorflow.models.rnn import rnn
 import lm_model_reader as reader
 import numpy as np
 import pdb
-from graph import Shared_Model
+from main_graph import Shared_Model
 
 import saveload
 
 
 def run_epoch(session, m, conll_words, ptb_words, pos, ptb_pos, chunk, ptb_chunk, pos_vocab_size,
-            chunk_vocab_size, vocab_size, num_steps, gold_embed, config, verbose=False, valid=False, model_type='JOINT'):
+            chunk_vocab_size, vocab_size, num_steps, gold_embed, verbose=False, valid=False, model_type='JOINT'):
     """Runs the model on the given data."""
     # =====================================
     # Initialise variables
@@ -43,6 +43,7 @@ def run_epoch(session, m, conll_words, ptb_words, pos, ptb_pos, chunk, ptb_chunk
         "lm_true": []
     }
 
+
     print('creating batches')
     conll_batches = reader.create_batches(conll_words, pos, chunk, m.batch_size,
                             m.num_steps, pos_vocab_size, chunk_vocab_size, vocab_size, continuing=True)
@@ -60,7 +61,7 @@ def run_epoch(session, m, conll_words, ptb_words, pos, ptb_pos, chunk, ptb_chunk
     # each data type in turn
     # ======================================================
 
-    def train_batch(batch, eval_op, model_type, epoch_stats, gold_embed, config, stop_write=False, validation=False):
+    def train_batch(batch, eval_op, model_type, epoch_stats, gold_embed, stop_write=False):
         (x, y_pos, y_chunk, y_lm) = batch
 
         joint_loss, _, pos_int_pred, chunk_int_pred, lm_int_pred, pos_int_true, \
@@ -72,8 +73,7 @@ def run_epoch(session, m, conll_words, ptb_words, pos, ptb_pos, chunk, ptb_chunk
                          m.pos_targets: y_pos,
                          m.chunk_targets: y_chunk,
                          m.lm_targets: y_lm,
-                         m.gold_embed: gold_embed,
-                         m.learning_rate: config.learning_rate
+                         m.gold_embed: gold_embed
                          })
 
         epoch_stats["comb_loss"] += joint_loss
@@ -124,7 +124,7 @@ def run_epoch(session, m, conll_words, ptb_words, pos, ptb_pos, chunk, ptb_chunk
     if valid:
         eval_op = tf.no_op()
         for i in range(conll_epoch_size):
-            train_batch(next(conll_batches), eval_op, "JOINT", epoch_stats, 0, config, validation=True)
+            train_batch(next(conll_batches), eval_op, "JOINT", epoch_stats, 0)
     else:
         print('ptb epoch size: ' + str(ptb_epoch_size))
         print('conll epoch size: ' + str(conll_epoch_size))
@@ -132,13 +132,13 @@ def run_epoch(session, m, conll_words, ptb_words, pos, ptb_pos, chunk, ptb_chunk
             if np.random.rand(1) < m.mix_percent:
                 eval_op = m.joint_op
                 epoch_stats = train_batch(next(conll_batches), \
-                    eval_op, "JOINT", epoch_stats, gold_embed, config, (conll_iter > conll_epoch_size))
+                    eval_op, "JOINT", epoch_stats, gold_embed, (conll_iter > conll_epoch_size))
                 conll_iter +=1
                 # print('conll iter: ' + str(conll_iter))
             else:
                 eval_op = m.lm_op
                 epoch_stats = train_batch(next(ptb_batches), \
-                    eval_op, "LM", epoch_stats, 0, config)
+                    eval_op, "LM", epoch_stats, 0)
                 ptb_iter += 1
                 # print('ptb iter: ' + str(ptb_iter))
 
