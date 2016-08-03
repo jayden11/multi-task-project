@@ -19,7 +19,8 @@ import sklearn
 class Config(object):
     def __init__(self, num_steps, encoder_size, pos_decoder_size, chunk_decoder_size,
     dropout, batch_size, pos_embedding_size, num_shared_layers, num_private_layers, chunk_embedding_size,
-    lm_decoder_size, bidirectional, lstm, mix_percent, max_epoch, reg_weight, word_embedding_size):
+    lm_decoder_size, bidirectional, lstm, mix_percent, max_epoch, reg_weight, word_embedding_size,
+    embedding_trainable, adam):
         """Configuration for the network"""
         self.init_scale = 0.1 # initialisation scale
         self.learning_rate = 0.001 # learning_rate (if you are using SGD)
@@ -45,17 +46,21 @@ class Config(object):
         self.bidirectional = bidirectional
         self.mix_percent = mix_percent
         self.reg_weight = reg_weight
+        self.embedding_trainable = embedding_trainable
+        self.adam = adam
 
 def main(model_type, dataset_path, ptb_path, save_path,
     num_steps, encoder_size, pos_decoder_size, chunk_decoder_size, dropout,
     batch_size, pos_embedding_size, num_shared_layers, num_private_layers, chunk_embedding_size,
     lm_decoder_size, bidirectional, lstm, write_to_file, mix_percent,glove_path,max_epoch,
-    projection_size, num_batches_gold, reg_weight, word_embedding_size, embedding=False, test=False):
+    projection_size, num_batches_gold, reg_weight, word_embedding_size, embedding_trainable, \
+    adam, embedding=False, test=False):
 
     """Main."""
     config = Config(num_steps, encoder_size, pos_decoder_size, chunk_decoder_size, dropout,
     batch_size, pos_embedding_size, num_shared_layers, num_private_layers, chunk_embedding_size,
-    lm_decoder_size, bidirectional, lstm, mix_percent, max_epoch, reg_weight, word_embedding_size)
+    lm_decoder_size, bidirectional, lstm, mix_percent, max_epoch, reg_weight, word_embedding_size, \
+     embedding_trainable, adam)
 
     raw_data_path = dataset_path + '/data'
     raw_data = reader.raw_x_y_data(
@@ -70,19 +75,7 @@ def main(model_type, dataset_path, ptb_path, save_path,
     num_chunk_tags = len(chunk_to_id)
     vocab_size = len(word_to_id)
 
-    # Uncomment for Sentences
-    # train_lengths = [len(s) for s in words_t]
-    # validation_lengths = [len(s) for s in words_v]
-    # test_lengths = [len(s) for s in words_test]
-    # ptb_lengths = [len(s) for s in words_ptb]
-    # combined_lengths = [len(s) for s in words_c]
-
-    # num_steps = np.max([np.max([len(s) for s in words_t]),
-    #                     np.max([len(s) for s in words_ptb]),
-    #                     np.max([len(s) for s in words_v]),
-    #                     np.max([len(s) for s in words_test])])
-
-    # Create an empty array to hold [epoch number, loss]
+    # Create an empty array to hold [epoch number, F1]
     if test==False:
         best_epoch = [0, 0.0]
     else:
@@ -258,7 +251,7 @@ def main(model_type, dataset_path, ptb_path, save_path,
                 valid_chunk_stats = np.append(valid_chunk_stats, chunk_F1)
 
                 # check annealing
-                if(round(chunk_F1,4)==round(best_epoch[1],4)):
+                if (round(chunk_F1,4)==round(best_epoch[1],4)) & (config.adam==False):
                     config.learning_rate = 0.8*config.learning_rate
                     print("learning rate updated")
 
@@ -314,7 +307,6 @@ def main(model_type, dataset_path, ptb_path, save_path,
                 np.savetxt(save_path + '/loss/train_chunk_loss_stats.txt', train_chunk_loss_stats)
                 np.savetxt(save_path + '/accuracy/train_pos_stats.txt', train_pos_stats)
                 np.savetxt(save_path + '/accuracy/train_chunk_stats.txt', train_chunk_stats)
-                # model that trains, given hyper-parameters
 
     with tf.Graph().as_default(), tf.Session() as session:
         initializer = tf.random_uniform_initializer(-config.init_scale,
@@ -510,6 +502,8 @@ if __name__ == "__main__":
     parser.add_argument("--num_gold")
     parser.add_argument("--reg_weight")
     parser.add_argument("--word_embedding_size")
+    parser.add_argument("--embedding_trainable")
+    parser.add_argument("--adam")
     args = parser.parse_args()
     if (str(args.model_type) != "POS") and (str(args.model_type) != "CHUNK"):
         args.model_type = 'JOINT'
@@ -523,4 +517,5 @@ if __name__ == "__main__":
          int(args.chunk_embedding_size), int(args.lm_decoder_size), \
          int(args.bidirectional), int(args.lstm), int(args.write_to_file), float(args.mix_percent), \
          str(args.glove_path), int(args.max_epoch), int(args.projection_size), \
-         int(args.num_gold),float(args.reg_weight), int(args.word_embedding_size), int(args.embedding),int(args.test))
+         int(args.num_gold),float(args.reg_weight), int(args.word_embedding_size), int(args.adam), \
+          int(args.embedding_trainable), int(args.embedding),int(args.test))

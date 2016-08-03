@@ -27,4 +27,6 @@ python3 run_model.py --model_type "JOINT" \
 		                 --projection_size 100 \
                      --num_gold 15 \
                      --reg_weight 0.01 \
-                     --word_embedding_size 300
+	                   --word_embedding_size 300 \
+		                 --embedding_trainable 0 \
+                     --adam 1

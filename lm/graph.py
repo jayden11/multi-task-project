@@ -7,10 +7,10 @@ import tensorflow as tf
 from tensorflow.models.rnn import rnn_cell
 from tensorflow.models.rnn import rnn
 
-from pos_graph import pos_private
-from shared_graph import shared_layer
-from lm_graph import lm_private
-from chunk_graph import chunk_private
+from subgraph.pos_graph import pos_private
+from subgraph.shared_graph import shared_layer
+from subgraph.lm_graph import lm_private
+from subgraph.chunk_graph import chunk_private
 
 
 import pdb
@@ -96,7 +96,10 @@ class Shared_Model(object):
             tvars = tf.trainable_variables()
             grads, _ = tf.clip_by_global_norm(tf.gradients(loss, tvars),
                                               config.max_grad_norm)
-            optimizer = tf.train.AdagradOptimizer(self.learning_rate)
+            if config.adam == True:
+                optimizer = tf.train.AdamOptimizer()
+            else:
+                optimizer = tf.train.AdagradOptimizer(self.learning_rate)
             train_op = optimizer.apply_gradients(zip(grads, tvars))
             return train_op
 
@@ -122,13 +125,15 @@ class Shared_Model(object):
         ################################################################
 
         # Read in the embeddings in a memory efficient manner
-        word_embedding = word_embedding = tf.get_variable("word_embedding", [vocab_size, word_embedding_size], trainable=False)
+        word_embedding = word_embedding = tf.get_variable("word_embedding",
+            [vocab_size, word_embedding_size], trainable=config.embedding_trainable)
         self.embedding_placeholder = tf.placeholder(tf.float32, [vocab_size, word_embedding_size])
         self.embedding_init = word_embedding.assign(self.embedding_placeholder)
 
         # get the embeddings
         inputs = tf.nn.embedding_lookup(word_embedding, self.input_data)
-        inputs = input_projection3D(inputs, projection_size) # put them through a projections
+        if config.embedding_trainable == False:
+            inputs = input_projection3D(inputs, projection_size) # put them through a projections
         input_l2 = tf.reduce_sum(inputs) # sum them up for the regulariser
 
         # get the pos and chunk embeddings
