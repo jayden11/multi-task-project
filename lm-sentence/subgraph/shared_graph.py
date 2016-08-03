@@ -10,11 +10,11 @@ from tensorflow.models.rnn import rnn
 import pdb
 
 
-def shared_layer(input_data, config):
+def shared_layer(input_data, config, is_training, sentence_lengths):
     """Build the model to decoding
 
     Args:
-        input_data = size batch_size X num_steps X embedding size
+        input_data = size config.batch_size X config.num_steps X embedding size
 
     Returns:
         output units
@@ -29,7 +29,7 @@ def shared_layer(input_data, config):
             cell_bw = rnn_cell.GRUCell(config.encoder_size)
 
         inputs = [tf.squeeze(input_, [1])
-                  for input_ in tf.split(1, num_steps, input_data)]
+                  for input_ in tf.split(1, config.num_steps, input_data)]
 
         if is_training and config.keep_prob < 1:
             cell_fw = rnn_cell.DropoutWrapper(
@@ -58,7 +58,7 @@ def shared_layer(input_data, config):
             cell = rnn_cell.GRUCell(config.encoder_size)
 
         inputs = [tf.squeeze(input_, [1])
-                  for input_ in tf.split(1, num_steps, input_data)]
+                  for input_ in tf.split(1, config.num_steps, input_data)]
 
         if is_training and config.keep_prob < 1:
             cell = rnn_cell.DropoutWrapper(

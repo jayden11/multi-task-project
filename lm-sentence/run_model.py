@@ -9,7 +9,6 @@ import numpy as np
 import pdb
 #import pandas as pd
 from graph import Shared_Model
-from run_epoch import run_epoch
 import argparse
 import saveload
 import run_epoch_random
@@ -20,7 +19,8 @@ import sklearn
 class Config(object):
     def __init__(self, num_steps, encoder_size, pos_decoder_size, chunk_decoder_size,
     dropout, batch_size, pos_embedding_size, num_shared_layers, num_private_layers, chunk_embedding_size,
-    lm_decoder_size, bidirectional, lstm, mix_percent, max_epoch, reg_weight, word_embedding_size):
+    lm_decoder_size, bidirectional, lstm, mix_percent, max_epoch, reg_weight, word_embedding_size,
+    adam, embedding_trainable):
         """Configuration for the network"""
         self.init_scale = 0.1 # initialisation scale
         self.learning_rate = 0.001 # learning_rate (if you are using SGD)
@@ -46,17 +46,20 @@ class Config(object):
         self.bidirectional = bidirectional
         self.mix_percent = mix_percent
         self.reg_weight = reg_weight
+        self.embedding_trainable = embedding_trainable
+        self.adam = adam
 
 def main(model_type, dataset_path, ptb_path, save_path,
     num_steps, encoder_size, pos_decoder_size, chunk_decoder_size, dropout,
     batch_size, pos_embedding_size, num_shared_layers, num_private_layers, chunk_embedding_size,
     lm_decoder_size, bidirectional, lstm, write_to_file, mix_percent,glove_path,max_epoch, num_batches_gold, \
-    reg_weight, word_embedding_size, embedding=False, test=False):
+    reg_weight, word_embedding_size, projection_size, embedding_trainable, adam, embedding=False, test=False):
 
     """Main."""
     config = Config(num_steps, encoder_size, pos_decoder_size, chunk_decoder_size, dropout,
     batch_size, pos_embedding_size, num_shared_layers, num_private_layers, chunk_embedding_size,
-    lm_decoder_size, bidirectional, lstm, mix_percent, max_epoch, reg_weight, word_embedding_size)
+    lm_decoder_size, bidirectional, lstm, mix_percent, max_epoch, reg_weight, word_embedding_size,
+    embedding_trainable, adam)
 
     raw_data_path = dataset_path + '/data'
     raw_data = reader.raw_x_y_data(
@@ -67,20 +70,15 @@ def main(model_type, dataset_path, ptb_path, save_path,
         chunk_to_id, words_test, pos_test, chunk_test, \
         words_c, pos_c, chunk_c, words_ptb, pos_ptb, chunk_ptb, word_embedding = raw_data
 
-    num_pos_tags = len(pos_to_id)
-    num_chunk_tags = len(chunk_to_id)
-    vocab_size = len(word_to_id)
+    config.num_pos_tags = num_pos_tags = len(pos_to_id)
+    config.num_chunk_tags = num_chunk_tags = len(chunk_to_id)
+    config.vocab_size = vocab_size = len(word_to_id)
 
     train_lengths = [len(s) for s in words_t]
     validation_lengths = [len(s) for s in words_v]
     test_lengths = [len(s) for s in words_test]
     ptb_lengths = [len(s) for s in words_ptb]
     combined_lengths = [len(s) for s in words_c]
-
-    # num_steps = np.max([np.max([len(s) for s in words_t]),
-    #                     np.max([len(s) for s in words_ptb]),
-    #                     np.max([len(s) for s in words_v]),
-    #                     np.max([len(s) for s in words_test])])
 
     # Create an empty array to hold [epoch number, loss]
     if test==False:
@@ -105,12 +103,12 @@ def main(model_type, dataset_path, ptb_path, save_path,
             with tf.variable_scope("hyp_model", reuse=None, initializer=initializer):
                 m = Shared_Model(is_training=True, config=config, num_pos_tags=num_pos_tags,
                 num_chunk_tags=num_chunk_tags, vocab_size=vocab_size, num_steps=num_steps,
-                embedding_dim=config.word_embedding_size)
+                embedding_dim=config.word_embedding_size, projection_size=projection_size)
 
             with tf.variable_scope("hyp_model", reuse=True, initializer=initializer):
                 mValid = Shared_Model(is_training=False, config=config, num_pos_tags=num_pos_tags,
                 num_chunk_tags=num_chunk_tags, vocab_size=vocab_size, num_steps=num_steps,
-                embedding_dim=config.word_embedding_size)
+                embedding_dim=config.word_embedding_size, projection_size = projection_size)
 
 
             print('initialising most variables')
@@ -151,35 +149,20 @@ def main(model_type, dataset_path, ptb_path, save_path,
             for i in range(config.max_epoch):
                 print(time.strftime("%Y-%m-%d %H:%M:%S", time.gmtime()))
                 print("Epoch: %d" % (i + 1))
-                if config.random_mix == False:
-                    if config.ptb == True:
-                        _, _, _, _, _, _, _, _, _, _ = \
-                            run_epoch(session, m,
-                                      words_ptb, pos_ptb, chunk_ptb,
-                                      num_pos_tags, num_chunk_tags, vocab_size, num_steps, num_batches_gold,
-                                      verbose=True, model_type='LM')
 
-
-                    mean_loss, posp_t, chunkp_t, lmp_t, post_t, chunkt_t, lmt_t, pos_loss, chunk_loss, lm_loss = \
-                        run_epoch(session, m,
-                                  words_t, pos_t, chunk_t,
-                                  num_pos_tags, num_chunk_tags, vocab_size, num_steps, num_batches_gold,
-                                  verbose=True, model_type=model_type)
-
+                if i > num_batches_gold:
+                    gold_percent = gold_percent * 0.8
                 else:
-                    if i > num_batches_gold:
-                        gold_percent = gold_percent * 0.8
-                    else:
-                        gold_percent = 1
-                    if np.random.rand(1) < gold_percent:
-                        gold_embed = 1
-                    else:
-                        gold_embed = 0
-                    mean_loss, posp_t, chunkp_t, lmp_t, post_t, chunkt_t, lmt_t, pos_loss, chunk_loss, lm_loss = \
-                        run_epoch_random.run_epoch(session, m,
-                                  words_t, words_ptb, pos_t, pos_ptb, chunk_t, chunk_ptb,
-                                  num_pos_tags, num_chunk_tags, vocab_size, num_steps, num_batches_gold,
-                                  verbose=True,  model_type=model_type)
+                    gold_percent = 1
+                if np.random.rand(1) < gold_percent:
+                    gold_embed = 1
+                else:
+                    gold_embed = 0
+                mean_loss, posp_t, chunkp_t, lmp_t, post_t, chunkt_t, lmt_t, pos_loss, chunk_loss, lm_loss = \
+                    run_epoch_random.run_epoch(session, m,
+                              words_t, words_ptb, pos_t, pos_ptb, chunk_t, chunk_ptb,
+                              num_pos_tags, num_chunk_tags, vocab_size, num_steps, num_batches_gold, config,
+                              verbose=True,  model_type=model_type)
 
 
                 print('epoch finished')
@@ -214,18 +197,13 @@ def main(model_type, dataset_path, ptb_path, save_path,
 
                 # print for tracking
                 print("Pos Training Accuracy After Epoch %d :  %3f" % (i+1, pos_acc))
-                print("Chunk Training Accuracy After Epoch %d : %3f" % (i+1, chunk_F1))
+                print("Chunk Training F1 After Epoch %d : %3f" % (i+1, chunk_F1))
                 print(time.strftime("%Y-%m-%d %H:%M:%S", time.gmtime()))
-
-                # valid_loss, posp_v, chunkp_v, lmp_v, post_v, chunkt_v, lmt_v, pos_v_loss, chunk_v_loss, lm_v_loss = \
-                #     run_epoch(session, mValid, words_v, pos_v, chunk_v,
-                #               num_pos_tags, num_chunk_tags, vocab_size, num_steps, num_batches_gold,
-                #               verbose=True, valid=True, model_type=model_type)
 
                 valid_loss, posp_v, chunkp_v, lmp_v, post_v, chunkt_v, lmt_v, pos_v_loss, chunk_v_loss, lm_v_loss = \
                     run_epoch_random.run_epoch(session, mValid,
                               words_v, words_ptb, pos_v, pos_ptb, chunk_v, chunk_ptb,
-                              num_pos_tags, num_chunk_tags, vocab_size, num_steps, num_batches_gold,
+                              num_pos_tags, num_chunk_tags, vocab_size, num_steps, num_batches_gold, config,
                               verbose=True,  model_type=model_type, valid=True)
 
                 # Save loss for charts
@@ -260,14 +238,44 @@ def main(model_type, dataset_path, ptb_path, save_path,
                 valid_pos_stats = np.append(valid_pos_stats, pos_acc)
                 valid_chunk_stats = np.append(valid_chunk_stats, chunk_F1)
 
+                # check annealing
+                if (round(chunk_F1,4)==round(best_epoch[1],4)) & (config.adam==False):
+                    config.learning_rate = 0.8*config.learning_rate
+                    print("learning rate updated: %f" % config.learning_rate)
+
                 # update best parameters
                 if(chunk_F1 > best_epoch[1]):
                     best_epoch = [i+1, chunk_F1]
+                    if write_to_file ==True:
+                        saveload.save(save_path + '/val_model.pkl', session)
+                        print("Model saved in file: %s" % save_path)
 
-                if write_to_file ==True:
-                    saveload.save(save_path + '/val_model.pkl', session)
-                    #model_save_path = saver.save(session, save_path + '/val_model.ckpt')
-                    print("Model saved in file: %s" % save_path)
+            print('Getting Testing Predictions (Valid)')
+
+            test_loss, posp_test, chunkp_test, lmp_test, post_test, chunkt_test, lmt_test, pos_test_loss, chunk_test_loss, lm_test_loss = \
+                run_epoch_random.run_epoch(session, mValid,
+                          words_test, words_ptb, pos_test, pos_ptb, chunk_test, chunk_ptb,
+                          num_pos_tags, num_chunk_tags, vocab_size, num_steps, gold_embed, config,
+                          verbose=True,  model_type=model_type, valid=True)
+
+            # prediction reshaping
+            posp_test = reader._res_to_list(posp_test, config.batch_size,
+                                            pos_to_id, len(words_test), test_lengths,to_str=True)
+            chunkp_test = reader._res_to_list(chunkp_test, config.batch_size,
+                                              chunk_to_id, len(words_test), test_lengths, to_str=True)
+
+            post_test = reader._res_to_list(post_test, config.batch_size,
+                                            pos_to_id, len(words_test), test_lengths,to_str=True)
+            chunkt_test = reader._res_to_list(chunkt_test, config.batch_size,
+                                              chunk_to_id, len(words_test), test_lengths, to_str=True)
+
+            # find the accuracy
+            print('finding  test accuracy')
+            pos_acc_train = np.sum(posp_test==post_test)/float(len(posp_test))
+            chunk_F1_train = sklearn.metrics.f1_score(chunkt_test, chunkp_test,average="weighted")
+
+            print("POS Test Accuracy: " + str(pos_acc_train))
+            print("Chunk Test F1: " + str(chunk_F1_train))
 
 
 
@@ -293,12 +301,12 @@ def main(model_type, dataset_path, ptb_path, save_path,
         with tf.variable_scope("final_model", reuse=None, initializer=initializer):
             mTrain = Shared_Model(is_training=True, config=config, num_pos_tags=num_pos_tags,
             num_chunk_tags=num_chunk_tags, vocab_size=vocab_size, num_steps=num_steps,
-            embedding_dim=config.word_embedding_size)
+            embedding_dim=config.word_embedding_size, projection_size=projection_size)
 
         with tf.variable_scope("final_model", reuse=True, initializer=initializer):
             mTest = Shared_Model(is_training=False, config=config, num_pos_tags=num_pos_tags,
             num_chunk_tags=num_chunk_tags, vocab_size=vocab_size, num_steps=num_steps,
-            embedding_dim=config.word_embedding_size)
+            embedding_dim=config.word_embedding_size, projection_size=projection_size)
 
         print('initialising variables')
         tf.initialize_all_variables().run()
@@ -308,49 +316,29 @@ def main(model_type, dataset_path, ptb_path, save_path,
 
 
         if write_to_file == True:
-
-            # Train given epoch parameter
-            if config.random_mix == False:
-                print('Train Given Best Epoch Parameter :' + str(best_epoch[0]))
-                for i in range(best_epoch[0]):
-                    print("Epoch: %d" % (i + 1))
-                    if config.ptb == False:
-                        _, _, _, _, _, _, _, _, _, _ = \
-                            run_epoch(session, mTrain,
-                                      words_ptb, pos_ptb, chunk_ptb,
-                                      num_pos_tags, num_chunk_tags, vocab_size, num_steps, num_batches_gold,
-                                      verbose=True, model_type="LM")
-
-                    _, posp_c, chunkp_c, _, _, _, _, _, _, _ = \
-                        run_epoch(session, mTrain,
-                                  words_c, pos_c, chunk_c,
-                                  num_pos_tags, num_chunk_tags, vocab_size, num_steps, num_batches_gold,
-                                  verbose=True, model_type=model_type)
-
-            else:
-                print('Train Given Best Epoch Parameter :' + str(best_epoch[0]))
-                for i in range(best_epoch[0]):
-                    print("Epoch: %d" % (i + 1))
-                    if i > num_batches_gold:
-                        gold_percent = gold_percent * 0.8
-                    else:
-                        gold_percent = 1
-                    if np.random.rand(1) < gold_percent:
-                        gold_embed = 1
-                    else:
-                        gold_embed = 0
-                    _, posp_c, chunkp_c, _, post_c, chunkt_c, _, _, _, _ = \
-                        run_epoch_random.run_epoch(session, mTrain,
-                                  words_c, words_ptb, pos_c, pos_ptb, chunk_c, chunk_ptb,
-                                  num_pos_tags, num_chunk_tags, vocab_size, num_steps, num_batches_gold,
-                                  verbose=True, model_type=model_type)
+            print('Train Given Best Epoch Parameter :' + str(best_epoch[0]))
+            for i in range(best_epoch[0]):
+                print("Epoch: %d" % (i + 1))
+                if i > num_batches_gold:
+                    gold_percent = gold_percent * 0.8
+                else:
+                    gold_percent = 1
+                if np.random.rand(1) < gold_percent:
+                    gold_embed = 1
+                else:
+                    gold_embed = 0
+                _, posp_c, chunkp_c, _, post_c, chunkt_c, _, _, _, _ = \
+                    run_epoch_random.run_epoch(session, mTrain,
+                              words_c, words_ptb, pos_c, pos_ptb, chunk_c, chunk_ptb,
+                              num_pos_tags, num_chunk_tags, vocab_size, num_steps, num_batches_gold, config,
+                              verbose=True, model_type=model_type)
 
 
             print('Getting Testing Predictions')
             valid_loss, posp_test, chunkp_test, lmp_test, post_test, chunkt_test, lmt_test, pos_test_loss, chunk_test_loss, lm_test_loss = \
                 run_epoch_random.run_epoch(session, mTest,
                           words_test, words_ptb, pos_test, pos_ptb, chunk_test, chunk_ptb,
-                          num_pos_tags, num_chunk_tags, vocab_size, num_steps, num_batches_gold,
+                          num_pos_tags, num_chunk_tags, vocab_size, num_steps, num_batches_gold, config,
                           verbose=True,  model_type=model_type, valid=True)
 
 
@@ -390,8 +378,11 @@ def main(model_type, dataset_path, ptb_path, save_path,
             pos_acc = np.sum(posp_test==post_test)/float(len(posp_test))
             chunk_F1 = sklearn.metrics.f1_score(chunkt_test, chunkp_test, average="weighted")
 
-            print("POS Test Accuracy: " + str(pos_acc))
-            print("Chunk Test Acccuracy: " + str(chunk_F1))
+            print("POS Test Accuracy (Both): " + str(pos_acc))
+            print("Chunk Test F1 (Both): " + str(chunk_F1))
+
+            print("POS Test Accuracy (Train): " + str(pos_acc_train))
+            print("Chunk Test F1 (Train): " + str(chunk_F1_train))
 
             if test==False:
                 train_custom = [words_t, np.char.upper(post_t), np.char.upper(chunkt_t)]
@@ -475,6 +466,9 @@ if __name__ == "__main__":
     parser.add_argument("--num_gold")
     parser.add_argument("--reg_weight")
     parser.add_argument("--word_embedding_size")
+    parser.add_argument("--embedding_trainable")
+    parser.add_argument("--projection_size")
+    parser.add_argument("--adam")
     args = parser.parse_args()
     if (str(args.model_type) != "POS") and (str(args.model_type) != "CHUNK"):
         args.model_type = 'JOINT'
@@ -488,4 +482,5 @@ if __name__ == "__main__":
          int(args.chunk_embedding_size), int(args.lm_decoder_size), \
          int(args.bidirectional), int(args.lstm), int(args.write_to_file), float(args.mix_percent), \
          str(args.glove_path), int(args.max_epoch), int(args.num_gold), float(args.reg_weight), \
-         int(args.word_embedding_size), int(args.embedding),int(args.test))
+         int(args.word_embedding_size), int(args.projection_size), int(args.embedding_trainable), \
+         int(args.adam), int(args.embedding),int(args.test))

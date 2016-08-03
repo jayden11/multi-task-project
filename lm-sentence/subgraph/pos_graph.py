@@ -10,7 +10,7 @@ from tensorflow.models.rnn import rnn
 import pdb
 
 
-def pos_private(encoder_units, config):
+def pos_private(encoder_units, config, is_training, sentence_lengths):
     """Decode model for pos
 
     Args:
@@ -45,7 +45,7 @@ def pos_private(encoder_units, config):
 
             # puts it into batch_size X input_size
             inputs = [tf.squeeze(input_, [1])
-                      for input_ in tf.split(1, num_steps,
+                      for input_ in tf.split(1, config.num_steps,
                                              encoder_units)]
 
             decoder_outputs, _, _ = rnn.bidirectional_rnn(cell_fw, cell_bw, inputs,
@@ -59,7 +59,7 @@ def pos_private(encoder_units, config):
 
             softmax_w = tf.get_variable("softmax_w",
                                         [2*config.pos_decoder_size,
-                                         num_pos_tags])
+                                         config.num_pos_tags])
         else:
             if config.lstm == True:
                 cell = rnn_cell.BasicLSTMCell(config.pos_decoder_size,
@@ -77,7 +77,7 @@ def pos_private(encoder_units, config):
 
             # puts it into batch_size X input_size
             inputs = [tf.squeeze(input_, [1])
-                      for input_ in tf.split(1, num_steps,
+                      for input_ in tf.split(1, config.num_steps,
                                              encoder_units)]
 
             decoder_outputs, decoder_states = rnn.rnn(cell, inputs,
@@ -88,9 +88,9 @@ def pos_private(encoder_units, config):
 
             softmax_w = tf.get_variable("softmax_w",
                                         [config.pos_decoder_size,
-                                         num_pos_tags])
+                                         config.num_pos_tags])
 
-        softmax_b = tf.get_variable("softmax_b", [num_pos_tags])
+        softmax_b = tf.get_variable("softmax_b", [config.num_pos_tags])
         logits = tf.matmul(output, softmax_w) + softmax_b
         l2_penalty = tf.reduce_sum(tf.square(output))
 

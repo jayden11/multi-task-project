@@ -23,7 +23,10 @@ python3 run_model.py --model_type "JOINT" \
                      --write_to_file 1 \
                      --embedding 1 \
                      --max_epoch 1 \
-            		     --test 0 \
-            		     --num_gold 1 \
-                     --reg_weight 0.1 \
+                     --test 0 \
+                     --num_gold 1 \
+                     --reg_weight 1e-09 \
                      --word_embedding_size 50 \
+                     --embedding_trainable 1 \
+                     --projection_size 25 \
+                     --adam 1 

@@ -10,12 +10,12 @@ from tensorflow.models.rnn import rnn
 import pdb
 
 
-def _chunk_private(encoder_units, pos_prediction, pos_hidden, config):
+def chunk_private(encoder_units, pos_prediction, config, is_training, sentence_lengths):
     """Decode model for chunks
 
     Args:
         encoder_units - these are the encoder units:
-        [batch_size X encoder_size] with the one the pos prediction
+        [config.batch_size X encoder_size] with the one the pos prediction
         pos_prediction:
         must be the same size as the encoder_size
 
@@ -23,10 +23,8 @@ def _chunk_private(encoder_units, pos_prediction, pos_hidden, config):
         logits
     """
     # concatenate the encoder_units and the pos_prediction
-
     pos_prediction = tf.reshape(pos_prediction,
-        [batch_size, num_steps, pos_embedding_size])
-    #pos_hidden = tf.reshape(pos_hidden, [batch_size, num_steps, 2*config.pos_decoder_size])
+        [config.batch_size, config.num_steps, config.pos_embedding_size])
     chunk_inputs = tf.concat(2, [pos_prediction, encoder_units])
 
     with tf.variable_scope("chunk_decoder"):
@@ -50,9 +48,9 @@ def _chunk_private(encoder_units, pos_prediction, pos_hidden, config):
             initial_state_fw = cell_fw.zero_state(config.batch_size, tf.float32)
             initial_state_bw = cell_bw.zero_state(config.batch_size, tf.float32)
 
-            # this function puts the 3d tensor into a 2d tensor: batch_size x input size
+            # this function puts the 3d tensor into a 2d tensor: config.batch_size x input size
             inputs = [tf.squeeze(input_, [1])
-                      for input_ in tf.split(1, num_steps,
+                      for input_ in tf.split(1, config.num_steps,
                                              chunk_inputs)]
 
             decoder_outputs, _, _ = rnn.bidirectional_rnn(cell_fw, cell_bw,
@@ -64,7 +62,7 @@ def _chunk_private(encoder_units, pos_prediction, pos_hidden, config):
                                 [-1, 2*config.chunk_decoder_size])
             softmax_w = tf.get_variable("softmax_w",
                                         [2*config.chunk_decoder_size,
-                                         num_chunk_tags])
+                                         config.num_chunk_tags])
         else:
             if config.lstm == True:
                 cell = rnn_cell.BasicLSTMCell(config.chunk_decoder_size, forget_bias=1.0)
@@ -79,9 +77,9 @@ def _chunk_private(encoder_units, pos_prediction, pos_hidden, config):
 
             initial_state = cell.zero_state(config.batch_size, tf.float32)
 
-            # this function puts the 3d tensor into a 2d tensor: batch_size x input size
+            # this function puts the 3d tensor into a 2d tensor: config.batch_size x input size
             inputs = [tf.squeeze(input_, [1])
-                      for input_ in tf.split(1, num_steps,
+                      for input_ in tf.split(1, config.num_steps,
                                              chunk_inputs)]
 
             decoder_outputs, decoder_states = rnn.rnn(cell,
@@ -94,9 +92,9 @@ def _chunk_private(encoder_units, pos_prediction, pos_hidden, config):
 
             softmax_w = tf.get_variable("softmax_w",
                                         [config.chunk_decoder_size,
-                                         num_chunk_tags])
+                                         config.num_chunk_tags])
 
-        softmax_b = tf.get_variable("softmax_b", [num_chunk_tags])
+        softmax_b = tf.get_variable("softmax_b", [config.num_chunk_tags])
         logits = tf.matmul(output, softmax_w) + softmax_b
         l2_penalty = tf.reduce_sum(tf.square(output))
 

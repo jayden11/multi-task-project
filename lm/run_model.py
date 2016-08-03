@@ -264,7 +264,7 @@ def main(model_type, dataset_path, ptb_path, save_path,
                     #model_save_path = saver.save(session, save_path + '/val_model.ckpt')
                     print("Model saved in file: %s" % save_path)
 
-            print('Getting Testing Predictions')
+            print('Getting Testing Predictions (Valid)')
             test_loss, posp_test, chunkp_test, lmp_test, post_test, chunkt_test, lmt_test, pos_test_loss, chunk_test_loss, lm_test_loss = \
                 run_epoch_random.run_epoch(session, mValid,
                           words_test, words_ptb, pos_test, pos_ptb, chunk_test, chunk_ptb,
@@ -408,7 +408,7 @@ def main(model_type, dataset_path, ptb_path, save_path,
             words_test = [id_to_word[k] for k in words_test[num_steps-1:]]
 
             # find the accuracy
-            print('finding  test accuracy')
+            print('finding test accuracy')
             pos_acc = np.sum(posp_test==post_test)/float(len(posp_test))
             chunk_F1 = sklearn.metrics.f1_score(chunkt_test, chunkp_test,average="weighted")
 
