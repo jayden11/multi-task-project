@@ -153,6 +153,22 @@ ${num_gold[num_gold_idx]}num_gold_${reg_weight[reg_weight_idx]}reg_weight_\
 ${embedding_trainable[embedding_trainable_idx]}emb_train_${adam[adam_train_idx]}"
 echo ${name}
 
+
+echo ${dataset_path[dataset_path_idx]}
+echo ${ptb_path[embedding_path_idx]}
+echo "./data/outputs/${directory}/${name}"
+echo ${embedding_path[embedding_path_idx]}
+echo ${num_steps[num_steps_idx]}
+echo ${encoder_size[encoder_size_idx]}
+echo ${dropout[dropout_idx]}
+echo ${batch_size[batch_size_idx]}
+echo ${embedding_size[task_embedding_size_idx]}
+echo ${num_shared_layers[num_shared_idx]}
+echo ${embedding_size[task_embedding_size_idx]}
+
+
+
+
 cp -R ./data/outputs/random_lm_150_July28_conll_annealing_glove_window_proj  ./data/outputs/${directory}/${name}
 
 LD_LIBRARY_PATH='/share/apps/mr/utils/libc6_2.17/lib/x86_64-linux-gnu/:/share/apps/mr/utils/lib6_2.17/usr/lib64/:/share/apps/gcc-5.2.0/lib64:/share/apps/gcc-5.2.0/lib:/opt/gridengine/lib/linux-x64:/opt/gridengine/lib/linux-x64:/opt/openmpi/lib:/opt/python/lib:/share/apps/mr/cuda/lib:/share/apps/mr/cuda/lib64:/share/apps/mr/cuda/lib:/share/apps/mr/cuda/lib64' \
