@@ -4,8 +4,6 @@ from __future__ import print_function
 
 import tensorflow as tf
 
-from tensorflow.models.rnn import rnn_cell
-from tensorflow.models.rnn import rnn
 
 from subgraph.pos_graph import pos_private
 from subgraph.chunk_graph import chunk_private
