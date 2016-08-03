@@ -9,9 +9,6 @@ import random
 import tensorflow as tf
 import tensorflow.python.platform
 
-from tensorflow.models.rnn import rnn_cell
-from tensorflow.models.rnn import rnn
-
 import lm_model_reader as reader
 import numpy as np
 import pdb
