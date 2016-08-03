@@ -162,12 +162,18 @@ echo ${num_steps[num_steps_idx]}
 echo ${encoder_size[encoder_size_idx]}
 echo ${dropout[dropout_idx]}
 echo ${batch_size[batch_size_idx]}
-echo ${embedding_size[task_embedding_size_idx]}
+echo ${task_embedding_size[task_embedding_size_idx]}
 echo ${num_shared_layers[num_shared_idx]}
 echo ${embedding_size[task_embedding_size_idx]}
-
-
-
+echo ${bidirectional[bidirectional_idx]}
+echo ${lstm[lstm_idx]}
+echo ${mix_percent[mix_percent_idx]}
+echo ${projection_size[projection_size_idx]}
+echo ${num_gold[num_gold_idx]}
+echo ${reg_weight[reg_weight_idx]}
+echo ${embedding_size[embedding_size_idx]}
+echo ${embedding_trainable[embedding_trainable_idx]}
+echo ${adam[adam_idx]}
 
 cp -R ./data/outputs/random_lm_150_July28_conll_annealing_glove_window_proj  ./data/outputs/${directory}/${name}
 
