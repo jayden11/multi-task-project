@@ -184,10 +184,10 @@ LD_LIBRARY_PATH='/share/apps/mr/utils/libc6_2.17/lib/x86_64-linux-gnu/:/share/ap
                                         --chunk_decoder_size ${encoder_size[encoder_size_idx]} \
                                         --dropout ${dropout[dropout_idx]} \
                                         --batch_size ${batch_size[batch_size_idx]} \
-                                        --pos_embedding_size ${embedding_size[task_embedding_size_idx]} \
+                                        --pos_embedding_size ${task_embedding_size[task_embedding_size_idx]} \
                                         --num_shared_layers ${num_shared_layers[num_shared_idx]} \
                                         --num_private_layers ${num_private_layers[num_private_idx]} \
-                                        --chunk_embedding_size ${embedding_size[task_embedding_size_idx]} \
+                                        --chunk_embedding_size ${task_embedding_size[task_embedding_size_idx]} \
                                         --lm_decoder_size  ${decoder_size[decoder_size_idx]} \
                                         --bidirectional ${bidirectional[bidirectional_idx]} \
                                         --lstm ${lstm[lstm_idx]} \
