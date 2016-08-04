@@ -250,8 +250,7 @@ def main(model_type, dataset_path, ptb_path, save_path,
                 valid_pos_stats = np.append(valid_pos_stats, pos_acc)
                 valid_chunk_stats = np.append(valid_chunk_stats, chunk_F1)
 
-                # check annealing
-                if (round(chunk_F1,3)==round(best_epoch[1],3)) & (config.adam==False):
+                if (np.round(chunk_F1,4)==np.round(np.float64(best_epoch[1]),4)) & (config.adam==False):
                     config.learning_rate = 0.8*config.learning_rate
                     print("learning rate updated")
 
