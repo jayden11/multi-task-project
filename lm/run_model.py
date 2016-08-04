@@ -13,7 +13,7 @@ import argparse
 import saveload
 import run_epoch_random
 import time
-import sklearn
+from sklearn.metrics import f1_score
 
 
 class Config(object):
@@ -202,7 +202,7 @@ def main(model_type, dataset_path, ptb_path, save_path,
                 # find the accuracy
                 print('finding accuracy')
                 pos_acc = np.sum(posp_t==post_t)/float(len(posp_t))
-                chunk_F1 = sklearn.metrics.f1_score(chunkt_t, chunkp_t,average="weighted")
+                chunk_F1 = f1_score(chunkt_t, chunkp_t,average="weighted")
 
                 # add to array
                 train_pos_stats = np.append(train_pos_stats, pos_acc)
@@ -240,7 +240,7 @@ def main(model_type, dataset_path, ptb_path, save_path,
 
                 # find accuracy
                 pos_acc = np.sum(posp_v==post_v)/float(len(posp_v))
-                chunk_F1 = sklearn.metrics.f1_score(chunkt_v, chunkp_v, average="weighted")
+                chunk_F1 = f1_score(chunkt_v, chunkp_v, average="weighted")
 
 
                 print("Pos Validation Accuracy After Epoch %d :  %3f" % (i+1, pos_acc))
@@ -288,7 +288,7 @@ def main(model_type, dataset_path, ptb_path, save_path,
             # find the accuracy
             print('finding  test accuracy')
             pos_acc_train = np.sum(posp_test==post_test)/float(len(posp_test))
-            chunk_F1_train = sklearn.metrics.f1_score(chunkt_test, chunkp_test,average="weighted")
+            chunk_F1_train = f1_score(chunkt_test, chunkp_test,average="weighted")
 
             print("POS Test Accuracy: " + str(pos_acc_train))
             print("Chunk Test F1: " + str(chunk_F1_train))
@@ -410,7 +410,7 @@ def main(model_type, dataset_path, ptb_path, save_path,
             # find the accuracy
             print('finding test accuracy')
             pos_acc = np.sum(posp_test==post_test)/float(len(posp_test))
-            chunk_F1 = sklearn.metrics.f1_score(chunkt_test, chunkp_test,average="weighted")
+            chunk_F1 = f1_score(chunkt_test, chunkp_test,average="weighted")
 
             print("POS Test Accuracy (Both): " + str(pos_acc))
             print("Chunk Test F1(Both): " + str(chunk_F1))
