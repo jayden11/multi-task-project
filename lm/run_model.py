@@ -250,14 +250,14 @@ def main(model_type, dataset_path, ptb_path, save_path,
                 valid_pos_stats = np.append(valid_pos_stats, pos_acc)
                 valid_chunk_stats = np.append(valid_chunk_stats, chunk_F1)
 
-                if (np.round(chunk_F1,2)==np.round(np.float64(best_epoch[1]),2)) & (config.adam==False):
+                if (abs(chunk_F1-prev_chunk_F1))<=0.001:
                     config.learning_rate = 0.8*config.learning_rate
                     print("learning rate updated")
 
                 # update best parameters
                 if(chunk_F1 > best_epoch[1]):
                     best_epoch = [i+1, chunk_F1]
-
+                prev_F1 = chunk_F1
                 if write_to_file ==True:
                     saveload.save(save_path + '/val_model.pkl', session)
                     #model_save_path = saver.save(session, save_path + '/val_model.ckpt')
