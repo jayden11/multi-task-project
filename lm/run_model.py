@@ -74,6 +74,7 @@ def main(model_type, dataset_path, ptb_path, save_path,
     num_pos_tags = len(pos_to_id)
     num_chunk_tags = len(chunk_to_id)
     vocab_size = len(word_to_id)
+    prev_chunk_F1 = 0.0
 
     # Create an empty array to hold [epoch number, F1]
     if test==False:
@@ -257,7 +258,7 @@ def main(model_type, dataset_path, ptb_path, save_path,
                 # update best parameters
                 if(chunk_F1 > best_epoch[1]):
                     best_epoch = [i+1, chunk_F1]
-                prev_F1 = chunk_F1
+                prev_chunk_F1 = chunk_F1
                 if write_to_file ==True:
                     saveload.save(save_path + '/val_model.pkl', session)
                     #model_save_path = saver.save(session, save_path + '/val_model.ckpt')
