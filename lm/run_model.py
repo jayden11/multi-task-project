@@ -23,7 +23,7 @@ class Config(object):
     embedding_trainable, adam):
         """Configuration for the network"""
         self.init_scale = 0.1 # initialisation scale
-        self.learning_rate = 0.001 # learning_rate (if you are using SGD)
+        self.learning_rate = 0.1 # learning_rate (if you are using SGD)
         self.max_grad_norm = 5 # for gradient clipping
         self.num_steps = int(num_steps) # length of sequence
         self.word_embedding_size = word_embedding_size # size of the embedding (consistent with glove)
