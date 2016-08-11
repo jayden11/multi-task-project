@@ -79,7 +79,7 @@ def run_epoch(session, m, conll_words, ptb_words, pos, ptb_pos, chunk, ptb_chunk
         epoch_stats["lm_total_loss"] += lm_loss
         epoch_stats["iters"] += 1
 
-        if verbose and (epoch_stats["iters"] % 10 == 0):
+        if verbose and (epoch_stats["iters"] % 20 == 0):
             if model_type == 'POS':
                 costs = epoch_stats["pos_total_loss"]
                 cost = pos_loss
@@ -125,19 +125,26 @@ def run_epoch(session, m, conll_words, ptb_words, pos, ptb_pos, chunk, ptb_chunk
     else:
         print('ptb epoch size: ' + str(ptb_epoch_size))
         print('conll epoch size: ' + str(conll_epoch_size))
-        while (ptb_iter < ptb_epoch_size) or (conll_iter < conll_epoch_size):
-            if np.random.rand(1) < m.mix_percent:
+        if m.mix_percent < 1:
+            while (ptb_iter < ptb_epoch_size) or (conll_iter < conll_epoch_size):
+                if np.random.rand(1) < m.mix_percent:
+                    eval_op = m.joint_op
+                    epoch_stats = train_batch(next(conll_batches), \
+                        eval_op, "JOINT", epoch_stats, gold_embed, config, (conll_iter > conll_epoch_size))
+                    conll_iter +=1
+                    # print('conll iter: ' + str(conll_iter))
+                else:
+                    eval_op = m.lm_op
+                    epoch_stats = train_batch(next(ptb_batches), \
+                        eval_op, "LM", epoch_stats, 0, config)
+                    ptb_iter += 1
+                    # print('ptb iter: ' + str(ptb_iter))
+        else:
+            while (conll_iter < conll_epoch_size):
                 eval_op = m.joint_op
                 epoch_stats = train_batch(next(conll_batches), \
                     eval_op, "JOINT", epoch_stats, gold_embed, config, (conll_iter > conll_epoch_size))
                 conll_iter +=1
-                # print('conll iter: ' + str(conll_iter))
-            else:
-                eval_op = m.lm_op
-                epoch_stats = train_batch(next(ptb_batches), \
-                    eval_op, "LM", epoch_stats, 0, config)
-                ptb_iter += 1
-                # print('ptb iter: ' + str(ptb_iter))
 
     return (epoch_stats["comb_loss"] / epoch_stats["iters"]), \
         epoch_stats["pos_predictions"], epoch_stats["chunk_predictions"], \

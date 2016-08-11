@@ -19,8 +19,8 @@ python3 run_model.py --model_type "JOINT" \
                      --lm_decoder_size  200 \
                      --bidirectional 1 \
                      --lstm 1 \
-                     --mix_percent 0.5 \
-                     --write_to_file 1 \
+                     --mix_percent 1 \
+                     --write_to_file 0 \
                      --embedding 1 \
                      --max_epoch 1 \
 		                 --test 0 \

@@ -246,9 +246,36 @@ def main(model_type, dataset_path, ptb_path, save_path,
                 # update best parameters
                 if(chunk_F1 > best_epoch[1]):
                     best_epoch = [i+1, chunk_F1]
-                    if write_to_file ==True:
-                        saveload.save(save_path + '/val_model.pkl', session)
-                        print("Model saved in file: %s" % save_path)
+
+                    saveload.save(save_path + '/val_model.pkl', session)
+                    print("Model saved in file: %s" % save_path)
+
+                    id_to_word = {v: k for k, v in word_to_id.items()}
+
+                    words_t_unrolled = [id_to_word[k] for k in np.concatenate(words_t)]
+                    words_v_unrolled = [id_to_word[k] for k in np.concatenate(words_v)]
+
+                    # unroll data
+                    train_custom = [words_t_unrolled, np.char.upper(post_t), np.char.upper(chunkt_t)]
+                    valid_custom = [words_v_unrolled, np.char.upper(post_v), np.char.upper(chunkt_v)]
+                    chunk_pred_train = np.concatenate((np.transpose(train_custom), np.char.upper(chunkp_t).reshape(-1,1)), axis=1)
+                    chunk_pred_val = np.concatenate((np.transpose(valid_custom), np.char.upper(chunkp_v).reshape(-1,1)), axis=1)
+                    pos_pred_train = np.concatenate((np.transpose(train_custom), np.char.upper(posp_t).reshape(-1,1)), axis=1)
+                    pos_pred_val = np.concatenate((np.transpose(valid_custom), np.char.upper(posp_v).reshape(-1,1)), axis=1)
+
+                    # write to file
+                    np.savetxt(save_path + '/predictions/chunk_pred_train.txt',
+                               chunk_pred_train, fmt='%s')
+                    print('writing to ' + save_path + '/predictions/chunk_pred_train.txt')
+                    np.savetxt(save_path + '/predictions/chunk_pred_val.txt',
+                               chunk_pred_val, fmt='%s')
+                    print('writing to ' + save_path + '/predictions/chunk_pred_val.txt')
+                    np.savetxt(save_path + '/predictions/pos_pred_train.txt',
+                               pos_pred_train, fmt='%s')
+                    print('writing to ' + save_path + '/predictions/pos_pred_train.txt')
+                    np.savetxt(save_path + '/predictions/pos_pred_val.txt',
+                               pos_pred_val, fmt='%s')
+                    print('writing to ' + save_path + '/predictions/pos_pred_val.txt')
 
             print('Getting Testing Predictions (Valid)')
 
@@ -280,42 +307,41 @@ def main(model_type, dataset_path, ptb_path, save_path,
 
 
             # Save loss & accuracy plots
-            if write_to_file == True:
-                np.savetxt(save_path + '/loss/valid_loss_stats.txt', valid_loss_stats)
-                np.savetxt(save_path + '/loss/valid_pos_loss_stats.txt', valid_pos_loss_stats)
-                np.savetxt(save_path + '/loss/valid_chunk_loss_stats.txt', valid_chunk_loss_stats)
-                np.savetxt(save_path + '/accuracy/valid_pos_stats.txt', valid_pos_stats)
-                np.savetxt(save_path + '/accuracy/valid_chunk_stats.txt', valid_chunk_stats)
+            np.savetxt(save_path + '/loss/valid_loss_stats.txt', valid_loss_stats)
+            np.savetxt(save_path + '/loss/valid_pos_loss_stats.txt', valid_pos_loss_stats)
+            np.savetxt(save_path + '/loss/valid_chunk_loss_stats.txt', valid_chunk_loss_stats)
+            np.savetxt(save_path + '/accuracy/valid_pos_stats.txt', valid_pos_stats)
+            np.savetxt(save_path + '/accuracy/valid_chunk_stats.txt', valid_chunk_stats)
 
-                np.savetxt(save_path + '/loss/train_loss_stats.txt', train_loss_stats)
-                np.savetxt(save_path + '/loss/train_pos_loss_stats.txt', train_pos_loss_stats)
-                np.savetxt(save_path + '/loss/train_chunk_loss_stats.txt', train_chunk_loss_stats)
-                np.savetxt(save_path + '/accuracy/train_pos_stats.txt', train_pos_stats)
-                np.savetxt(save_path + '/accuracy/train_chunk_stats.txt', train_chunk_stats)
-                # model that trains, given hyper-parameters
+            np.savetxt(save_path + '/loss/train_loss_stats.txt', train_loss_stats)
+            np.savetxt(save_path + '/loss/train_pos_loss_stats.txt', train_pos_loss_stats)
+            np.savetxt(save_path + '/loss/train_chunk_loss_stats.txt', train_chunk_loss_stats)
+            np.savetxt(save_path + '/accuracy/train_pos_stats.txt', train_pos_stats)
+            np.savetxt(save_path + '/accuracy/train_chunk_stats.txt', train_chunk_stats)
 
+
+    # model that trains, given hyper-parameters
     with tf.Graph().as_default(), tf.Session() as session:
-        initializer = tf.random_uniform_initializer(-config.init_scale,
-                                                    config.init_scale)
-
-        with tf.variable_scope("final_model", reuse=None, initializer=initializer):
-            mTrain = Shared_Model(is_training=True, config=config, num_pos_tags=num_pos_tags,
-            num_chunk_tags=num_chunk_tags, vocab_size=vocab_size, num_steps=num_steps,
-            embedding_dim=config.word_embedding_size, projection_size=projection_size)
-
-        with tf.variable_scope("final_model", reuse=True, initializer=initializer):
-            mTest = Shared_Model(is_training=False, config=config, num_pos_tags=num_pos_tags,
-            num_chunk_tags=num_chunk_tags, vocab_size=vocab_size, num_steps=num_steps,
-            embedding_dim=config.word_embedding_size, projection_size=projection_size)
-
-        print('initialising variables')
-        tf.initialize_all_variables().run()
-        print('initialising word embeddings')
-        session.run(mTrain.embedding_init, {mTrain.embedding_placeholder: word_embedding})
-        session.run(mTest.embedding_init, {mTest.embedding_placeholder: word_embedding})
-
-
         if write_to_file == True:
+            initializer = tf.random_uniform_initializer(-config.init_scale,
+                                                        config.init_scale)
+
+            with tf.variable_scope("final_model", reuse=None, initializer=initializer):
+                mTrain = Shared_Model(is_training=True, config=config, num_pos_tags=num_pos_tags,
+                num_chunk_tags=num_chunk_tags, vocab_size=vocab_size, num_steps=num_steps,
+                embedding_dim=config.word_embedding_size, projection_size=projection_size)
+
+            with tf.variable_scope("final_model", reuse=True, initializer=initializer):
+                mTest = Shared_Model(is_training=False, config=config, num_pos_tags=num_pos_tags,
+                num_chunk_tags=num_chunk_tags, vocab_size=vocab_size, num_steps=num_steps,
+                embedding_dim=config.word_embedding_size, projection_size=projection_size)
+
+            print('initialising variables')
+            tf.initialize_all_variables().run()
+            print('initialising word embeddings')
+            session.run(mTrain.embedding_init, {mTrain.embedding_placeholder: word_embedding})
+            session.run(mTest.embedding_init, {mTest.embedding_placeholder: word_embedding})
+
             print('Train Given Best Epoch Parameter :' + str(best_epoch[0]))
             for i in range(best_epoch[0]):
                 print("Epoch: %d" % (i + 1))
@@ -434,7 +460,7 @@ def main(model_type, dataset_path, ptb_path, save_path,
                        pos_pred_test, fmt='%s')
 
         else:
-            print('Best Validation Loss ' + str(best_epoch[1]))
+            print('Best Validation F1 ' + str(best_epoch[1]))
             print('Best Validation Epoch ' + str(best_epoch[0]))
 
 
