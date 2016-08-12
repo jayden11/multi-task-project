@@ -4,20 +4,20 @@
 echo 'Running Model'
 #$ -l tmem=15G
 #$ -l h_vmem=15G
-#$ -l h_rt=72:00:00
+#$ -l h_rt=120:00:00
 #These are optional flags but you problably want them in all jobs
 
 #$ -S /bin/bash
-#$ -N dropout-batch
+#$ -N mix-percent-batch
 #$ -wd /home/jgodwin/
-#$ -t 1-6
+#$ -t 1-12
 #$ -o ./data/outputs/grid_output/
 #$ -e ./data/outputs/grid_output/
 
 export PYTHONPATH=${PYTHONPATH}:/home/jgodwin/
 
 timestamp="date -u +%Y-%m-%dT%H%MZ"
-directory="dropout-grid-conll"
+directory="mix-percent-grid"
 mkdir -p "./data/outputs/${directory}"
 
 
@@ -26,7 +26,7 @@ i=$(expr $SGE_TASK_ID - 1)
 num_steps=(64)
 encoder_size=(256)
 decoder_size=(256)
-dropout=("0.4" "0.5" "0.6")
+dropout=("0.5")
 batch_size=(64)
 embedding_size=(300)
 task_embedding_size=(50)
@@ -34,7 +34,7 @@ num_shared_layers=(1)
 num_private_layers=(1)
 bidirectional=(1)
 lstm=(1)
-mix_percent=(0.5)
+mix_percent=(0.3 0.4 0.5 0.6 0.7 1)
 embedding_path=("./data/glove.6B/glove.6B.300d.txt")
 embedding=("glove")
 dataset_path=("./data/conll" "./data/genia")
@@ -176,9 +176,9 @@ LD_LIBRARY_PATH='/share/apps/mr/utils/libc6_2.17/lib/x86_64-linux-gnu/:/share/ap
                                         --bidirectional ${bidirectional[bidirectional_idx]} \
                                         --lstm ${lstm[lstm_idx]} \
                                         --mix_percent ${mix_percent[mix_percent_idx]} \
-                                        --write_to_file 1 \
+                                        --write_to_file 0 \
                                         --embedding 1 \
-                                        --max_epoch 150 \
+                                        --max_epoch 70 \
                                         --test 0 \
                                         --projection_size ${projection_size[projection_size_idx]} \
                                         --num_gold ${num_gold[num_gold_idx]} \

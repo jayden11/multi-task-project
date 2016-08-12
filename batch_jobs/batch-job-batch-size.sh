@@ -4,30 +4,30 @@
 echo 'Running Model'
 #$ -l tmem=15G
 #$ -l h_vmem=15G
-#$ -l h_rt=72:00:00
+#$ -l h_rt=100:00:00
 #These are optional flags but you problably want them in all jobs
 
 #$ -S /bin/bash
-#$ -N dropout-batch
+#$ -N batch-size-batch
 #$ -wd /home/jgodwin/
-#$ -t 1-6
+#$ -t 1-18
 #$ -o ./data/outputs/grid_output/
 #$ -e ./data/outputs/grid_output/
 
 export PYTHONPATH=${PYTHONPATH}:/home/jgodwin/
 
 timestamp="date -u +%Y-%m-%dT%H%MZ"
-directory="dropout-grid-conll"
+directory="batch-grid"
 mkdir -p "./data/outputs/${directory}"
 
 
 i=$(expr $SGE_TASK_ID - 1)
 
-num_steps=(64)
+num_steps=(16 32 64)
 encoder_size=(256)
 decoder_size=(256)
-dropout=("0.4" "0.5" "0.6")
-batch_size=(64)
+dropout=("0.5")
+batch_size=(16 32 64)
 embedding_size=(300)
 task_embedding_size=(50)
 num_shared_layers=(1)

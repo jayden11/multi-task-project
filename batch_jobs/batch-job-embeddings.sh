@@ -4,20 +4,20 @@
 echo 'Running Model'
 #$ -l tmem=15G
 #$ -l h_vmem=15G
-#$ -l h_rt=72:00:00
+#$ -l h_rt=100:00:00
 #These are optional flags but you problably want them in all jobs
 
 #$ -S /bin/bash
-#$ -N dropout-batch
+#$ -N embeddings-batch
 #$ -wd /home/jgodwin/
-#$ -t 1-6
+#$ -t 1-10
 #$ -o ./data/outputs/grid_output/
 #$ -e ./data/outputs/grid_output/
 
 export PYTHONPATH=${PYTHONPATH}:/home/jgodwin/
 
 timestamp="date -u +%Y-%m-%dT%H%MZ"
-directory="dropout-grid-conll"
+directory="embeddings-grid"
 mkdir -p "./data/outputs/${directory}"
 
 
@@ -26,17 +26,17 @@ i=$(expr $SGE_TASK_ID - 1)
 num_steps=(64)
 encoder_size=(256)
 decoder_size=(256)
-dropout=("0.4" "0.5" "0.6")
+dropout=("0.5")
 batch_size=(64)
-embedding_size=(300)
+embedding_size=(300 200 100 50 50)
 task_embedding_size=(50)
 num_shared_layers=(1)
 num_private_layers=(1)
 bidirectional=(1)
 lstm=(1)
 mix_percent=(0.5)
-embedding_path=("./data/glove.6B/glove.6B.300d.txt")
-embedding=("glove")
+embedding_path=("./data/glove.6B/glove.6B.300d.txt" "./data/glove.6B/glove.6B.200d.txt" "./data/glove.6B/glove.6B.100d.txt" "./data/glove.6B/glove.6B.50d.txt" "./data/senna/senna.txt")
+embedding=("glove300" "glove200" "glove100" "glove50" "SENNA")
 dataset_path=("./data/conll" "./data/genia")
 dataset=("Conll" "Genia")
 ptb_path=("./data/ptb" "./data/pubmed")
@@ -49,7 +49,7 @@ adam=(1)
 total_steps=$((${#num_steps[@]} * ${#encoder_size[@]} * ${#decoder_size[@]} * \
 ${#dropout[@]} * ${#batch_size[@]} * ${#embedding_size[@]} * ${#task_embedding_size[@]} * \
 ${#num_shared_layers[@]} * ${#num_private_layers[@]} * ${#bidirectional[@]} * \
-${#lstm[@]} * ${#embedding_path[@]} * ${#dataset_path[@]} * \
+${#lstm[@]} * ${#dataset_path[@]} * \
 ${#projection_size[@]}  * ${#task_embedding_size[@]} * ${#num_gold[@]} * ${#reg_weight[@]} * \
 ${#embedding_trainable[@]} * ${#adam[@]} ))
 
@@ -111,11 +111,6 @@ echo ${steps}
 task_embedding_size_idx=$((i / steps))
 
 i=$((i % steps))
-steps=$(($steps / ${#embedding_path[@]}))
-echo ${steps}
-embedding_path_idx=$((i / steps))
-
-i=$((i % steps))
 steps=$(($steps / ${#dataset_path[@]}))
 echo ${steps}
 dataset_path_idx=$((i / steps))
@@ -148,7 +143,7 @@ adam_idx=$((i / steps))
 name="${dataset[dataset_path_idx]}_${num_steps[num_steps_idx]}n_\
 ${dropout[dropout_idx]}drop_${batch_size[batch_size_idx]}b_\
 ${embedding_size[embedding_size_idx]}emb_size_${lstm[lstm_idx]}cell_${mix_percent[mix_percent_idx]}mix\
-${embedding[embedding_path_idx]}emb_${projection_size[projection_size_idx]}proj\
+${embedding[embedding_size_idx]}emb_${projection_size[projection_size_idx]}proj\
 ${num_gold[num_gold_idx]}num_gold_${reg_weight[reg_weight_idx]}reg_weight_\
 ${embedding_trainable[embedding_trainable_idx]}emb_train_${adam[adam_train_idx]}"
 echo ${name}
@@ -161,7 +156,7 @@ LD_LIBRARY_PATH='/share/apps/mr/utils/libc6_2.17/lib/x86_64-linux-gnu/:/share/ap
                                         --dataset_path ${dataset_path[dataset_path_idx]} \
                                         --ptb_path ${ptb_path[embedding_path_idx]} \
                                         --save_path "./data/outputs/${directory}/${name}" \
-                                        --glove_path ${embedding_path[embedding_path_idx]}\
+                                        --glove_path ${embedding_path[embedding_size_idx]}\
                                         --num_steps ${num_steps[num_steps_idx]} \
                                         --encoder_size ${encoder_size[encoder_size_idx]} \
                                         --pos_decoder_size ${encoder_size[encoder_size_idx]} \
