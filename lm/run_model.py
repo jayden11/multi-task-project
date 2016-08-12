@@ -20,7 +20,7 @@ class Config(object):
     def __init__(self, num_steps, encoder_size, pos_decoder_size, chunk_decoder_size,
     dropout, batch_size, pos_embedding_size, num_shared_layers, num_private_layers, chunk_embedding_size,
     lm_decoder_size, bidirectional, lstm, mix_percent, max_epoch, reg_weight, word_embedding_size,
-    embedding_trainable, adam):
+    embedding_trainable, adam, fraction_of_training_data):
         """Configuration for the network"""
         self.init_scale = 0.1 # initialisation scale
         self.learning_rate = 0.1 # learning_rate (if you are using SGD)
@@ -48,19 +48,20 @@ class Config(object):
         self.reg_weight = reg_weight
         self.embedding_trainable = embedding_trainable
         self.adam = adam
+        self.fraction_of_training_data = fraction_of_training_data
 
 def main(model_type, dataset_path, ptb_path, save_path,
     num_steps, encoder_size, pos_decoder_size, chunk_decoder_size, dropout,
     batch_size, pos_embedding_size, num_shared_layers, num_private_layers, chunk_embedding_size,
     lm_decoder_size, bidirectional, lstm, write_to_file, mix_percent,glove_path,max_epoch,
     projection_size, num_batches_gold, reg_weight, word_embedding_size, embedding_trainable, \
-    adam, embedding=False, test=False):
+    adam, fraction_of_training_data=1, embedding=False, test=False):
 
     """Main."""
     config = Config(num_steps, encoder_size, pos_decoder_size, chunk_decoder_size, dropout,
     batch_size, pos_embedding_size, num_shared_layers, num_private_layers, chunk_embedding_size,
     lm_decoder_size, bidirectional, lstm, mix_percent, max_epoch, reg_weight, word_embedding_size, \
-     embedding_trainable, adam)
+     embedding_trainable, adam, fraction_of_training_data)
 
     raw_data_path = dataset_path + '/data'
     raw_data = reader.raw_x_y_data(
@@ -70,6 +71,12 @@ def main(model_type, dataset_path, ptb_path, save_path,
         pos_v, chunk_v, word_to_id, pos_to_id, \
         chunk_to_id, words_test, pos_test, chunk_test, \
         words_c, pos_c, chunk_c, words_ptb, pos_ptb, chunk_ptb, word_embedding = raw_data
+
+    num_train_examples = int(np.floor(len(words_t) * fraction_of_training_data))
+
+    words_t = words_t[:num_train_examples]
+    pos_t = pos_t[:num_train_examples]
+    chunk_t = chunk_t[:num_train_examples]
 
     num_pos_tags = len(pos_to_id)
     num_chunk_tags = len(chunk_to_id)
@@ -528,6 +535,7 @@ if __name__ == "__main__":
     parser.add_argument("--word_embedding_size")
     parser.add_argument("--embedding_trainable")
     parser.add_argument("--adam")
+    parser.add_argument("--fraction_of_training_data")
     args = parser.parse_args()
     if (str(args.model_type) != "POS") and (str(args.model_type) != "CHUNK"):
         args.model_type = 'JOINT'
@@ -542,4 +550,4 @@ if __name__ == "__main__":
          int(args.bidirectional), int(args.lstm), int(args.write_to_file), float(args.mix_percent), \
          str(args.glove_path), int(args.max_epoch), int(args.projection_size), \
          int(args.num_gold),float(args.reg_weight), int(args.word_embedding_size), int(args.adam), \
-          int(args.embedding_trainable), int(args.embedding),int(args.test))
+          int(args.embedding_trainable), float(args.fraction_of_training_data), int(args.embedding),int(args.test))

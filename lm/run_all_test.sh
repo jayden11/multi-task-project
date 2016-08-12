@@ -11,7 +11,7 @@ python3 run_model.py --model_type "JOINT" \
                      --pos_decoder_size 200 \
                      --chunk_decoder_size 200 \
                      --dropout 0.5 \
-                     --batch_size 32 \
+                     --batch_size 10 \
                      --pos_embedding_size 400 \
                      --num_shared_layers 1 \
                      --num_private_layers 1 \
@@ -29,4 +29,5 @@ python3 run_model.py --model_type "JOINT" \
                      --reg_weight 0.01 \
 	                   --word_embedding_size 300 \
 		                 --embedding_trainable 0 \
-                     --adam 1
+                     --adam 1 \
+                     --fraction_of_training_data 0.5 \
