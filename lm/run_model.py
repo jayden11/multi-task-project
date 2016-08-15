@@ -20,7 +20,7 @@ class Config(object):
     def __init__(self, num_steps, encoder_size, pos_decoder_size, chunk_decoder_size,
     dropout, batch_size, pos_embedding_size, num_shared_layers, num_private_layers, chunk_embedding_size,
     lm_decoder_size, bidirectional, lstm, mix_percent, max_epoch, reg_weight, word_embedding_size,
-    embedding_trainable, adam, fraction_of_training_data):
+    embedding_trainable, adam, fraction_of_training_data, connections):
         """Configuration for the network"""
         self.init_scale = 0.1 # initialisation scale
         self.learning_rate = 0.1 # learning_rate (if you are using SGD)
@@ -49,19 +49,20 @@ class Config(object):
         self.embedding_trainable = embedding_trainable
         self.adam = adam
         self.fraction_of_training_data = fraction_of_training_data
+        self.connections = connections
 
 def main(model_type, dataset_path, ptb_path, save_path,
     num_steps, encoder_size, pos_decoder_size, chunk_decoder_size, dropout,
     batch_size, pos_embedding_size, num_shared_layers, num_private_layers, chunk_embedding_size,
     lm_decoder_size, bidirectional, lstm, write_to_file, mix_percent,glove_path,max_epoch,
     projection_size, num_batches_gold, reg_weight, word_embedding_size, embedding_trainable, \
-    adam, fraction_of_training_data=1, embedding=False, test=False):
+    adam, connections, fraction_of_training_data=1, embedding=False, test=False):
 
     """Main."""
     config = Config(num_steps, encoder_size, pos_decoder_size, chunk_decoder_size, dropout,
     batch_size, pos_embedding_size, num_shared_layers, num_private_layers, chunk_embedding_size,
     lm_decoder_size, bidirectional, lstm, mix_percent, max_epoch, reg_weight, word_embedding_size, \
-     embedding_trainable, adam, fraction_of_training_data)
+     embedding_trainable, adam, fraction_of_training_data, connections)
 
     raw_data_path = dataset_path + '/data'
     raw_data = reader.raw_x_y_data(
@@ -536,6 +537,7 @@ if __name__ == "__main__":
     parser.add_argument("--embedding_trainable")
     parser.add_argument("--adam")
     parser.add_argument("--fraction_of_training_data")
+    parser.add_argument("--connections")
     args = parser.parse_args()
     if (str(args.model_type) != "POS") and (str(args.model_type) != "CHUNK"):
         args.model_type = 'JOINT'
@@ -550,4 +552,4 @@ if __name__ == "__main__":
          int(args.bidirectional), int(args.lstm), int(args.write_to_file), float(args.mix_percent), \
          str(args.glove_path), int(args.max_epoch), int(args.projection_size), \
          int(args.num_gold),float(args.reg_weight), int(args.word_embedding_size), int(args.adam), \
-          int(args.embedding_trainable), float(args.fraction_of_training_data), int(args.embedding),int(args.test))
+          int(args.embedding_trainable), int(args.connections), float(args.fraction_of_training_data), int(args.embedding),int(args.test))

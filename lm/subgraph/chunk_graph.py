@@ -22,9 +22,12 @@ def chunk_private(encoder_units, pos_prediction, config, is_training):
     """
     # concatenate the encoder_units and the pos_prediction
 
-    pos_prediction = tf.reshape(pos_prediction,
-        [config.batch_size, config.num_steps, config.pos_embedding_size])
-    chunk_inputs = tf.concat(2, [pos_prediction, encoder_units])
+    if config.connections==True:
+        pos_prediction = tf.reshape(pos_prediction,
+            [config.batch_size, config.num_steps, config.pos_embedding_size])
+        chunk_inputs = tf.concat(2, [pos_prediction, encoder_units])
+    else:
+        chunk_inputs = encoder_units
 
     with tf.variable_scope("chunk_decoder"):
         if config.bidirectional == True:

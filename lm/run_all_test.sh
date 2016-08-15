@@ -30,4 +30,5 @@ python3 run_model.py --model_type "JOINT" \
 	                   --word_embedding_size 300 \
 		                 --embedding_trainable 0 \
                      --adam 1 \
-                     --fraction_of_training_data 0.5 \
+                     --fraction_of_training_data 1 \
+                     --connections 0

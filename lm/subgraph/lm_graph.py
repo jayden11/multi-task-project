@@ -20,11 +20,14 @@ def lm_private(encoder_units, pos_prediction, chunk_prediction, config, is_train
     """
     # concatenate the encoder_units and the pos_prediction
 
-    pos_prediction = tf.reshape(pos_prediction,
-        [config.batch_size, config.num_steps, config.pos_embedding_size])
-    chunk_prediction = tf.reshape(chunk_prediction,
-        [config.batch_size, config.num_steps, config.chunk_embedding_size])
-    lm_inputs = tf.concat(2, [chunk_prediction, pos_prediction, encoder_units])
+    if config.connections == True:
+        pos_prediction = tf.reshape(pos_prediction,
+            [config.batch_size, config.num_steps, config.pos_embedding_size])
+        chunk_prediction = tf.reshape(chunk_prediction,
+            [config.batch_size, config.num_steps, config.chunk_embedding_size])
+        lm_inputs = tf.concat(2, [chunk_prediction, pos_prediction, encoder_units])
+    else:
+        lm_inputs = encoder_units
 
     with tf.variable_scope("lm_decoder"):
         if config.bidirectional == True:
