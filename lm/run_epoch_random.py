@@ -60,18 +60,33 @@ def run_epoch(session, m, conll_words, ptb_words, pos, ptb_pos, chunk, ptb_chunk
     def train_batch(batch, eval_op, model_type, epoch_stats, gold_embed, config, stop_write=False, validation=False):
         (x, y_pos, y_chunk, y_lm) = batch
 
-        joint_loss, _, pos_int_pred, chunk_int_pred, lm_int_pred, pos_int_true, \
-            chunk_int_true, lm_int_true, pos_loss, chunk_loss, lm_loss = \
-            session.run([m.joint_loss, eval_op, m.pos_int_pred,
-                         m.chunk_int_pred, m.lm_int_pred, m.pos_int_targ, m.chunk_int_targ,
-                         m.lm_int_targ, m.pos_loss, m.chunk_loss, m.lm_loss],
-                        {m.input_data: x,
-                         m.pos_targets: y_pos,
-                         m.chunk_targets: y_chunk,
-                         m.lm_targets: y_lm,
-                         m.gold_embed: gold_embed,
-                         m.learning_rate: config.learning_rate
-                         })
+        if validation==True:
+            joint_loss, pos_int_pred, chunk_int_pred, lm_int_pred, pos_int_true, \
+                chunk_int_true, lm_int_true, pos_loss, chunk_loss, lm_loss = \
+                session.run([m.joint_loss, m.pos_int_pred,
+                             m.chunk_int_pred, m.lm_int_pred, m.pos_int_targ, m.chunk_int_targ,
+                             m.lm_int_targ, m.pos_loss, m.chunk_loss, m.lm_loss],
+                            {m.input_data: x,
+                             m.pos_targets: y_pos,
+                             m.chunk_targets: y_chunk,
+                             m.lm_targets: y_lm,
+                             m.gold_embed: gold_embed,
+                             m.learning_rate: config.learning_rate
+                             })
+
+        else:
+            joint_loss, _, pos_int_pred, chunk_int_pred, lm_int_pred, pos_int_true, \
+                chunk_int_true, lm_int_true, pos_loss, chunk_loss, lm_loss = \
+                session.run([m.joint_loss, eval_op, m.pos_int_pred,
+                             m.chunk_int_pred, m.lm_int_pred, m.pos_int_targ, m.chunk_int_targ,
+                             m.lm_int_targ, m.pos_loss, m.chunk_loss, m.lm_loss],
+                            {m.input_data: x,
+                             m.pos_targets: y_pos,
+                             m.chunk_targets: y_chunk,
+                             m.lm_targets: y_lm,
+                             m.gold_embed: gold_embed,
+                             m.learning_rate: config.learning_rate
+                             })
 
         epoch_stats["comb_loss"] += joint_loss
         epoch_stats["chunk_total_loss"] += chunk_loss
