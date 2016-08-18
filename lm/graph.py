@@ -162,9 +162,11 @@ class Shared_Model(object):
         if config.argmax==1:
             pos_to_chunk_embed = tf.cond(self.gold_embed > 0 , lambda: tf.matmul(self.pos_targets, pos_embedding),\
             lambda: tf.nn.embedding_lookup(pos_embedding,pos_int_pred))
+            pos_embed_l2 = tf.reduce_sum(pos_to_chunk_embed)
         else:
             pos_to_chunk_embed = tf.cond(self.gold_embed > 0 , lambda: tf.matmul(self.pos_targets, pos_embedding), \
             lambda: tf.matmul(tf.nn.softmax(pos_logits),pos_embedding))
+            pos_embed_l2 = tf.reduce_sum(pos_to_chunk_embed)
 
         # create the chunk layer
         chunk_logits, chunk_l2 = chunk_private(encoding, pos_to_chunk_embed, config, is_training)
@@ -178,9 +180,11 @@ class Shared_Model(object):
         if config.argmax==1:
             chunk_to_lm_embed = tf.cond(self.gold_embed > 0, lambda: tf.matmul(self.chunk_targets, chunk_embedding), \
             lambda: tf.nn.embedding_lookup(chunk_embedding,chunk_int_pred))
+            chunk_embed_l2 = tf.reduce_sum(chunk_to_lm_embed)
         else:
             chunk_to_lm_embed = tf.cond(self.gold_embed > 0, lambda: tf.matmul(tf.nn.softmax(chunk_logits),chunk_embedding), \
             lambda: tf.nn.embedding_lookup(chunk_embedding,chunk_int_pred))
+            chunk_embed_l2 = tf.reduce_sum(chunk_to_lm_embed)
 
         # create the LM layer
         lm_logits, lm_l2 = lm_private(encoding, chunk_to_lm_embed,  pos_to_chunk_embed, config, is_training)
@@ -196,7 +200,7 @@ class Shared_Model(object):
             return
 
         # define the regulariser parameters
-        total_l2 = lm_l2 + pos_l2 + chunk_l2 + encoding_l2 + input_l2
+        total_l2 = lm_l2 + pos_l2 + chunk_l2 + encoding_l2 + input_l2 + chunk_embed_l2 + pos_embed_l2
 
         self.pos_op = _training(pos_loss, config, self)
         self.chunk_op = _training(chunk_loss, config, self)

@@ -14,6 +14,7 @@ import saveload
 import run_epoch_random
 import time
 from sklearn.metrics import f1_score
+import pickle
 
 
 class Config(object):
@@ -268,6 +269,10 @@ def main(model_type, dataset_path, ptb_path, save_path,
                     best_epoch = [i+1, chunk_F1]
 
                     saveload.save(save_path + '/val_model.pkl', session)
+                    with open(save_path + '/pos_to_id.pkl', "wb") as file:
+                        pickle.dump(pos_to_id, file)
+                    with open(save_path + '/chunk_to_id.pkl', "wb") as file:
+                        pickle.dump(chunk_to_id, file)
                     print("Model saved in file: %s" % save_path)
                     id_to_word = {v: k for k, v in word_to_id.items()}
 
