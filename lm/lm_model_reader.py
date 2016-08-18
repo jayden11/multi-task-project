@@ -48,10 +48,7 @@ def read_tokens(filename, padding_val, col_val=-1):
     words = np.pad(
         words, pad_width=(padding_val, 0), mode='constant', constant_values=0)
     if col_val!=-1:
-        if col_val ==2:
-            return [str(x).lower()[2:] for x in words]
-        else:
-            return [str(x).lower() for x in words]
+        return [str(x).lower() for x in words]
     else:
         return words
 
