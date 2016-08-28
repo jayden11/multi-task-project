@@ -126,7 +126,6 @@ class Shared_Model(object):
             [vocab_size, word_embedding_size], trainable=config.embedding_trainable)
         self.embedding_placeholder = tf.placeholder(tf.float32, [vocab_size, word_embedding_size])
         self.embedding_init = word_embedding.assign(self.embedding_placeholder)
-
         # get the embeddings
         inputs = tf.nn.embedding_lookup(word_embedding, self.input_data)
         if config.embedding_trainable == False:

@@ -85,6 +85,11 @@ def main(model_type, dataset_path, ptb_path, save_path,
     vocab_size = len(word_to_id)
     prev_chunk_F1 = 0.0
 
+    ptb_batches = reader.create_batches(words_ptb, pos_ptb, chunk_ptb, config.batch_size,
+                            config.num_steps, num_pos_tags, num_chunk_tags, vocab_size, continuing=True)
+
+    ptb_iter = 0
+
     # Create an empty array to hold [epoch number, F1]
     if test==False:
         best_epoch = [0, 0.0]
@@ -181,11 +186,11 @@ def main(model_type, dataset_path, ptb_path, save_path,
                         gold_embed = 1
                     else:
                         gold_embed = 0
-                    mean_loss, posp_t, chunkp_t, lmp_t, post_t, chunkt_t, lmt_t, pos_loss, chunk_loss, lm_loss = \
+                    mean_loss, posp_t, chunkp_t, lmp_t, post_t, chunkt_t, lmt_t, pos_loss, chunk_loss, lm_loss, ptb_iter = \
                         run_epoch_random.run_epoch(session, m,
                                   words_t, words_ptb, pos_t, pos_ptb, chunk_t, chunk_ptb,
-                                  num_pos_tags, num_chunk_tags, vocab_size, num_steps, gold_embed, config=config,
-                                  verbose=True, model_type=model_type)
+                                  num_pos_tags, num_chunk_tags, vocab_size, num_steps, gold_embed, config,
+                                  ptb_batches, ptb_iter, verbose=True, model_type=model_type)
 
 
                 print('epoch finished')
@@ -222,11 +227,11 @@ def main(model_type, dataset_path, ptb_path, save_path,
                 print("Pos Training Accuracy After Epoch %d :  %3f" % (i+1, pos_acc))
                 print("Chunk Training F1 After Epoch %d : %3f" % (i+1, chunk_F1))
 
-                valid_loss, posp_v, chunkp_v, lmp_v, post_v, chunkt_v, lmt_v, pos_v_loss, chunk_v_loss, lm_v_loss = \
+                valid_loss, posp_v, chunkp_v, lmp_v, post_v, chunkt_v, lmt_v, pos_v_loss, chunk_v_loss, lm_v_loss, ptb_iter = \
                     run_epoch_random.run_epoch(session, mValid,
                               words_v, words_ptb, pos_v, pos_ptb, chunk_v, chunk_ptb,
-                              num_pos_tags, num_chunk_tags, vocab_size, num_steps, gold_embed, config=config,
-                              verbose=True,  model_type=model_type, valid=True)
+                              num_pos_tags, num_chunk_tags, vocab_size, num_steps, gold_embed, config,
+                              ptb_batches, ptb_iter, verbose=True,  model_type=model_type, valid=True)
 
                 # Save loss for charts
                 valid_loss_stats = np.append(valid_loss_stats, valid_loss)
@@ -304,11 +309,11 @@ def main(model_type, dataset_path, ptb_path, save_path,
                 prev_chunk_F1 = chunk_F1
 
             print('Getting Testing Predictions (Valid)')
-            test_loss, posp_test, chunkp_test, lmp_test, post_test, chunkt_test, lmt_test, pos_test_loss, chunk_test_loss, lm_test_loss = \
+            test_loss, posp_test, chunkp_test, lmp_test, post_test, chunkt_test, lmt_test, pos_test_loss, chunk_test_loss, lm_test_loss, ptb_iter = \
                 run_epoch_random.run_epoch(session, mValid,
                           words_test, words_ptb, pos_test, pos_ptb, chunk_test, chunk_ptb,
                           num_pos_tags, num_chunk_tags, vocab_size, num_steps, gold_embed, config,
-                          verbose=True,  model_type=model_type, valid=True)
+                          ptb_batches, ptb_iter, verbose=True,  model_type=model_type, valid=True)
 
             # get predictions as list
             posp_test = reader._res_to_list(posp_test, config.batch_size, num_steps,
@@ -401,19 +406,19 @@ def main(model_type, dataset_path, ptb_path, save_path,
                         gold_embed = 0
                     for i in range(best_epoch[0]):
                         print("Epoch: %d" % (i + 1))
-                        _, posp_c, chunkp_c, _, post_c, chunkt_c, _, _, _, _ = \
+                        _, posp_c, chunkp_c, _, post_c, chunkt_c, _, _, _, _, ptb_iter = \
                             run_epoch_random.run_epoch(session, mTrain,
                                       words_c, words_ptb, pos_c, pos_ptb, chunk_c, chunk_ptb,
                                       num_pos_tags, num_chunk_tags, vocab_size, num_steps, gold_embed, config,
-                                      verbose=True, model_type=model_type)
+                                      ptb_batches, ptb_iter, verbose=True, model_type=model_type)
 
 
                 print('Getting Testing Predictions')
-                test_loss, posp_test, chunkp_test, lmp_test, post_test, chunkt_test, lmt_test, pos_test_loss, chunk_test_loss, lm_test_loss = \
+                test_loss, posp_test, chunkp_test, lmp_test, post_test, chunkt_test, lmt_test, pos_test_loss, chunk_test_loss, lm_test_loss, ptb_iter = \
                     run_epoch_random.run_epoch(session, mTest,
                               words_test, words_ptb, pos_test, pos_ptb, chunk_test, chunk_ptb,
                               num_pos_tags, num_chunk_tags, vocab_size, num_steps, gold_embed, config,
-                              verbose=True,  model_type=model_type, valid=True)
+                              ptb_batches, ptb_iter, verbose=True,  model_type=model_type, valid=True)
 
                 print('Writing Predictions')
                 # prediction reshaping

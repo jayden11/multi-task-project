@@ -18,7 +18,7 @@ import saveload
 
 
 def run_epoch(session, m, conll_words, ptb_words, pos, ptb_pos, chunk, ptb_chunk, pos_vocab_size,
-            chunk_vocab_size, vocab_size, num_steps, gold_embed, config, verbose=False, valid=False, model_type='JOINT'):
+            chunk_vocab_size, vocab_size, num_steps, gold_embed, config, ptb_batches, ptb_iter, verbose=False, valid=False, model_type='JOINT'):
     """Runs the model on the given data."""
     # =====================================
     # Initialise variables
@@ -45,10 +45,6 @@ def run_epoch(session, m, conll_words, ptb_words, pos, ptb_pos, chunk, ptb_chunk
                             m.num_steps, pos_vocab_size, chunk_vocab_size, vocab_size, continuing=True)
 
     conll_iter = 0
-
-    ptb_batches = reader.create_batches(ptb_words, ptb_pos, ptb_chunk, m.batch_size,
-                            m.num_steps, pos_vocab_size, chunk_vocab_size, vocab_size, continuing=True)
-    ptb_iter = 0
 
     # =======================================================
     # Define the train batch method
@@ -141,7 +137,7 @@ def run_epoch(session, m, conll_words, ptb_words, pos, ptb_pos, chunk, ptb_chunk
         print('ptb epoch size: ' + str(ptb_epoch_size))
         print('conll epoch size: ' + str(conll_epoch_size))
         if m.mix_percent < 1:
-            while (ptb_iter < ptb_epoch_size) or (conll_iter < conll_epoch_size):
+            while  (conll_iter < conll_epoch_size):
                 if np.random.rand(1) < m.mix_percent:
                     eval_op = m.joint_op
                     epoch_stats = train_batch(next(conll_batches), \
@@ -153,7 +149,8 @@ def run_epoch(session, m, conll_words, ptb_words, pos, ptb_pos, chunk, ptb_chunk
                     epoch_stats = train_batch(next(ptb_batches), \
                         eval_op, "LM", epoch_stats, 0, config)
                     ptb_iter += 1
-                    # print('ptb iter: ' + str(ptb_iter))
+                    ptb_iter = ptb_iter % ptb_epoch_size
+                    print('ptb iter: ' + str(ptb_iter))
         else:
             while (conll_iter < conll_epoch_size):
                 eval_op = m.joint_op
@@ -167,4 +164,4 @@ def run_epoch(session, m, conll_words, ptb_words, pos, ptb_pos, chunk, ptb_chunk
         epoch_stats["chunk_true"], epoch_stats["lm_true"], \
         (epoch_stats["pos_total_loss"] / epoch_stats["iters"]), \
         (epoch_stats["chunk_total_loss"] / epoch_stats["iters"]), \
-        (epoch_stats["lm_total_loss"] / epoch_stats["iters"])
+        (epoch_stats["lm_total_loss"] / epoch_stats["iters"]), ptb_iter
