@@ -279,63 +279,86 @@ def main(model_type, dataset_path, ptb_path, save_path,
                     with open(save_path + '/chunk_to_id.pkl', "wb") as file:
                         pickle.dump(chunk_to_id, file)
                     print("Model saved in file: %s" % save_path)
-                    id_to_word = {v: k for k, v in word_to_id.items()}
 
-                    words_t_unrolled = [id_to_word[k] for k in words_t[num_steps-1:]]
-                    words_v_unrolled = [id_to_word[k] for k in words_v[num_steps-1:]]
+                    if write_to_file==False:
+                        id_to_word = {v: k for k, v in word_to_id.items()}
 
-                    # unroll data
-                    train_custom = np.hstack((np.array(words_t_unrolled).reshape(-1,1), np.char.upper(post_t), np.char.upper(chunkt_t)))
-                    valid_custom = np.hstack((np.array(words_v_unrolled).reshape(-1,1), np.char.upper(post_v), np.char.upper(chunkt_v)))
-                    chunk_pred_train = np.concatenate((train_custom, np.char.upper(chunkp_t).reshape(-1,1)), axis=1)
-                    chunk_pred_val = np.concatenate((valid_custom, np.char.upper(chunkp_v).reshape(-1,1)), axis=1)
-                    pos_pred_train = np.concatenate((train_custom, np.char.upper(posp_t).reshape(-1,1)), axis=1)
-                    pos_pred_val = np.concatenate((valid_custom, np.char.upper(posp_v).reshape(-1,1)), axis=1)
+                        words_t_unrolled = [id_to_word[k] for k in words_t[num_steps-1:]]
+                        words_v_unrolled = [id_to_word[k] for k in words_v[num_steps-1:]]
 
-                    # write to file
-                    np.savetxt(save_path + '/predictions/chunk_pred_train.txt',
-                               chunk_pred_train, fmt='%s')
-                    print('writing to ' + save_path + '/predictions/chunk_pred_train.txt')
-                    np.savetxt(save_path + '/predictions/chunk_pred_val.txt',
-                               chunk_pred_val, fmt='%s')
-                    print('writing to ' + save_path + '/predictions/chunk_pred_val.txt')
-                    np.savetxt(save_path + '/predictions/pos_pred_train.txt',
-                               pos_pred_train, fmt='%s')
-                    print('writing to ' + save_path + '/predictions/pos_pred_train.txt')
-                    np.savetxt(save_path + '/predictions/pos_pred_val.txt',
-                               pos_pred_val, fmt='%s')
-                    print('writing to ' + save_path + '/predictions/pos_pred_val.txt')
+                        # unroll data
+                        train_custom = np.hstack((np.array(words_t_unrolled).reshape(-1,1), np.char.upper(post_t), np.char.upper(chunkt_t)))
+                        valid_custom = np.hstack((np.array(words_v_unrolled).reshape(-1,1), np.char.upper(post_v), np.char.upper(chunkt_v)))
+                        chunk_pred_train = np.concatenate((train_custom, np.char.upper(chunkp_t).reshape(-1,1)), axis=1)
+                        chunk_pred_val = np.concatenate((valid_custom, np.char.upper(chunkp_v).reshape(-1,1)), axis=1)
+                        pos_pred_train = np.concatenate((train_custom, np.char.upper(posp_t).reshape(-1,1)), axis=1)
+                        pos_pred_val = np.concatenate((valid_custom, np.char.upper(posp_v).reshape(-1,1)), axis=1)
+
+                        # write to file
+                        np.savetxt(save_path + '/predictions/chunk_pred_train.txt',
+                                   chunk_pred_train, fmt='%s')
+                        print('writing to ' + save_path + '/predictions/chunk_pred_train.txt')
+                        np.savetxt(save_path + '/predictions/chunk_pred_val.txt',
+                                   chunk_pred_val, fmt='%s')
+                        print('writing to ' + save_path + '/predictions/chunk_pred_val.txt')
+                        np.savetxt(save_path + '/predictions/pos_pred_train.txt',
+                                   pos_pred_train, fmt='%s')
+                        print('writing to ' + save_path + '/predictions/pos_pred_train.txt')
+                        np.savetxt(save_path + '/predictions/pos_pred_val.txt',
+                                   pos_pred_val, fmt='%s')
+                        print('writing to ' + save_path + '/predictions/pos_pred_val.txt')
+
+                        print('Getting Testing Predictions (Valid)')
+                        test_loss, posp_test, chunkp_test, lmp_test, post_test, chunkt_test, lmt_test, pos_test_loss, chunk_test_loss, lm_test_loss, ptb_iter = \
+                            run_epoch_random.run_epoch(session, mValid,
+                                      words_test, words_ptb, pos_test, pos_ptb, chunk_test, chunk_ptb,
+                                      num_pos_tags, num_chunk_tags, vocab_size, num_steps, gold_embed, config,
+                                      ptb_batches, ptb_iter, verbose=True,  model_type=model_type, valid=True)
+
+                        # get predictions as list
+                        posp_test = reader._res_to_list(posp_test, config.batch_size, num_steps,
+                                                     pos_to_id, len(words_test), to_str=True)
+                        chunkp_test = reader._res_to_list(chunkp_test, config.batch_size, num_steps,
+                                                        chunk_to_id, len(words_test), to_str=True)
+                        lmp_test = reader._res_to_list(lmp_test, config.batch_size, num_steps,
+                                                        word_to_id, len(words_test), to_str=True)
+                        chunkt_test = reader._res_to_list(chunkt_test, config.batch_size, num_steps,
+                                                        chunk_to_id, len(words_test), to_str=True)
+                        post_test = reader._res_to_list(post_test, config.batch_size, num_steps,
+                                                     pos_to_id, len(words_test), to_str=True)
+                        lmt_test = reader._res_to_list(lmt_test, config.batch_size, num_steps,
+                                                        word_to_id, len(words_test), to_str=True)
+
+                        words_test_c = [id_to_word[k] for k in words_test[num_steps-1:]]
+                        test_data = np.hstack((np.array(words_test_c).reshape(-1,1), np.char.upper(post_test), np.char.upper(chunkt_test)))
+
+                        # find the accuracy
+                        print('finding  test accuracy')
+                        pos_acc_train = np.sum(posp_test==post_test)/float(len(posp_test))
+                        chunk_F1_train = f1_score(chunkt_test, chunkp_test,average="weighted")
+
+                        print("POS Test Accuracy: " + str(pos_acc_train))
+                        print("Chunk Test F1: " + str(chunk_F1_train))
+
+                        chunk_pred_test = np.concatenate((test_data, np.char.upper(chunkp_test).reshape(-1,1)), axis=1)
+                        pos_pred_test = np.concatenate((test_data, np.char.upper(posp_test).reshape(-1,1)), axis=1)
+
+                        print('writing to ' + save_path + '/predictions/chunk_pred_combined.txt')
+                        np.savetxt(save_path + '/predictions/chunk_pred_test.txt',
+                                   chunk_pred_test, fmt='%s')
+                        print('writing to ' + save_path + '/predictions/chunk_pred_test.txt')
+
+                        np.savetxt(save_path + '/predictions/pos_pred_train.txt',
+                                   pos_pred_train, fmt='%s')
+                        print('writing to ' + save_path + '/predictions/pos_pred_train.txt')
+                        np.savetxt(save_path + '/predictions/pos_pred_val.txt',
+                                   pos_pred_val, fmt='%s')
+                        print('writing to ' + save_path + '/predictions/pos_pred_val.txt')
+
+                        np.savetxt(save_path + '/predictions/pos_pred_test.txt',
+                                   pos_pred_test, fmt='%s')
 
                 prev_chunk_F1 = chunk_F1
-
-            print('Getting Testing Predictions (Valid)')
-            test_loss, posp_test, chunkp_test, lmp_test, post_test, chunkt_test, lmt_test, pos_test_loss, chunk_test_loss, lm_test_loss, ptb_iter = \
-                run_epoch_random.run_epoch(session, mValid,
-                          words_test, words_ptb, pos_test, pos_ptb, chunk_test, chunk_ptb,
-                          num_pos_tags, num_chunk_tags, vocab_size, num_steps, gold_embed, config,
-                          ptb_batches, ptb_iter, verbose=True,  model_type=model_type, valid=True)
-
-            # get predictions as list
-            posp_test = reader._res_to_list(posp_test, config.batch_size, num_steps,
-                                         pos_to_id, len(words_test), to_str=True)
-            chunkp_test = reader._res_to_list(chunkp_test, config.batch_size, num_steps,
-                                            chunk_to_id, len(words_test), to_str=True)
-            lmp_test = reader._res_to_list(lmp_test, config.batch_size, num_steps,
-                                            word_to_id, len(words_test), to_str=True)
-            chunkt_test = reader._res_to_list(chunkt_test, config.batch_size, num_steps,
-                                            chunk_to_id, len(words_test), to_str=True)
-            post_test = reader._res_to_list(post_test, config.batch_size, num_steps,
-                                         pos_to_id, len(words_test), to_str=True)
-            lmt_test = reader._res_to_list(lmt_test, config.batch_size, num_steps,
-                                            word_to_id, len(words_test), to_str=True)
-
-            # find the accuracy
-            print('finding  test accuracy')
-            pos_acc_train = np.sum(posp_test==post_test)/float(len(posp_test))
-            chunk_F1_train = f1_score(chunkt_test, chunkp_test,average="weighted")
-
-            print("POS Test Accuracy: " + str(pos_acc_train))
-            print("Chunk Test F1: " + str(chunk_F1_train))
 
 
             # Save loss & accuracy plots
@@ -350,6 +373,7 @@ def main(model_type, dataset_path, ptb_path, save_path,
             np.savetxt(save_path + '/loss/train_chunk_loss_stats.txt', train_chunk_loss_stats)
             np.savetxt(save_path + '/accuracy/train_pos_stats.txt', train_pos_stats)
             np.savetxt(save_path + '/accuracy/train_chunk_stats.txt', train_chunk_stats)
+
 
     if write_to_file == True:
             with tf.Graph().as_default(), tf.Session() as session:

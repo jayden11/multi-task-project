@@ -150,7 +150,7 @@ def run_epoch(session, m, conll_words, ptb_words, pos, ptb_pos, chunk, ptb_chunk
                         eval_op, "LM", epoch_stats, 0, config)
                     ptb_iter += 1
                     ptb_iter = ptb_iter % ptb_epoch_size
-                    print('ptb iter: ' + str(ptb_iter))
+                    # print('ptb iter: ' + str(ptb_iter))
         else:
             while (conll_iter < conll_epoch_size):
                 eval_op = m.joint_op
