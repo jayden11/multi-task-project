@@ -92,9 +92,10 @@ def main(model_type, dataset_path, ptb_path, save_path,
 
     # Create an empty array to hold [epoch number, F1]
     if test==False:
-        best_epoch = [0, 0.0]
+        best_chunk_epoch = [0, 0.0]
+        best_pos_epoch = [0, 0.0]
     else:
-        best_epoch = [max_epoch, 0.0]
+        best_chunk_epoch = [max_epoch, 0.0]
 
     print('constructing word embedding')
 
@@ -270,8 +271,11 @@ def main(model_type, dataset_path, ptb_path, save_path,
                     print("learning rate updated")
 
                 # update best parameters
-                if(chunk_F1 > best_epoch[1]):
-                    best_epoch = [i+1, chunk_F1]
+                if(chunk_F1 > best_chunk_epoch[1]) or (pos_acc > best_pos_epoch[1]):
+                    if pos_acc > best_pos_epoch[1]:
+                        best_pos_epoch = [i+1, pos_acc]
+                    if chunk_F1 > best_chunk_epoch[1]:
+                        best_chunk_epoch = [i+1, chunk_F1]
 
                     saveload.save(save_path + '/val_model.pkl', session)
                     with open(save_path + '/pos_to_id.pkl', "wb") as file:
@@ -360,7 +364,6 @@ def main(model_type, dataset_path, ptb_path, save_path,
 
                 prev_chunk_F1 = chunk_F1
 
-
             # Save loss & accuracy plots
             np.savetxt(save_path + '/loss/valid_loss_stats.txt', valid_loss_stats)
             np.savetxt(save_path + '/loss/valid_pos_loss_stats.txt', valid_pos_loss_stats)
@@ -401,8 +404,8 @@ def main(model_type, dataset_path, ptb_path, save_path,
 
                 # Train given epoch parameter
                 if config.random_mix == False:
-                    print('Train Given Best Epoch Parameter :' + str(best_epoch[0]))
-                    for i in range(best_epoch[0]):
+                    print('Train Given Best Epoch Parameter :' + str(best_chunk_epoch[0]))
+                    for i in range(best_chunk_epoch[0]):
                         print("Epoch: %d" % (i + 1))
                         if config.ptb == False:
                             _, _, _, _, _, _, _, _, _, _ = \
@@ -418,7 +421,7 @@ def main(model_type, dataset_path, ptb_path, save_path,
                                       verbose=True, model_type=model_type)
 
                 else:
-                    print('Train Given Best Epoch Parameter :' + str(best_epoch[0]))
+                    print('Train Given Best Epoch Parameter :' + str(best_chunk_epoch[0]))
                     # an additional if statement to get the gold vs pred connections
                     if i > num_batches_gold:
                         gold_percent = gold_percent * 0.8
@@ -428,7 +431,7 @@ def main(model_type, dataset_path, ptb_path, save_path,
                         gold_embed = 1
                     else:
                         gold_embed = 0
-                    for i in range(best_epoch[0]):
+                    for i in range(best_chunk_epoch[0]):
                         print("Epoch: %d" % (i + 1))
                         _, posp_c, chunkp_c, _, post_c, chunkt_c, _, _, _, _, ptb_iter = \
                             run_epoch_random.run_epoch(session, mTrain,
@@ -535,8 +538,8 @@ def main(model_type, dataset_path, ptb_path, save_path,
                            pos_pred_test, fmt='%s')
 
     else:
-        print('Best Validation F1 ' + str(best_epoch[1]))
-        print('Best Validation Epoch ' + str(best_epoch[0]))
+        print('Best Validation F1 ' + str(best_chunk_epoch[1]))
+        print('Best Validation Epoch ' + str(best_chunk_epoch[0]))
 
 
 if __name__ == "__main__":
