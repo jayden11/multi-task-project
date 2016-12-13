@@ -7,7 +7,7 @@ import collections
 import os
 import sys
 import time
-#import pandas as pd
+import pandas as pd
 import csv
 import pdb
 import pickle
@@ -74,11 +74,14 @@ def _build_vocab(filename, ptb_filename, padding_width, col_val):
     word_to_id = dict(zip(words, range(len(words))))
     return word_to_id
 
-def _build_vocab_embedding(filename, ptb_filename, padding_width, col_val, embedding):
+def _build_vocab_embedding(filename, ptb_filename, padding_width, col_val, embedding, ptb=True):
     # can be used for input vocab
     conll_data = read_tokens(filename, padding_width, col_val)
-    ptb_data = read_tokens(ptb_filename, padding_width, col_val)
-    data = np.concatenate((conll_data, ptb_data))
+    if ptb==False:
+        ptb_data = read_tokens(ptb_filename, padding_width, col_val)
+        data = np.concatenate((conll_data, ptb_data))
+    else:
+        data = conll_data
     counter = collections.Counter(data)
     # get rid of all words with frequency == 1
     counter = {k: v for k, v in counter.items() if (v > 1) or (k not in embedding)}
@@ -135,7 +138,7 @@ def _file_to_tag_classifications(filename, tag_to_id, padding_width, col_val):
     return [tag_to_id[tag] for tag in data]
 
 
-def raw_x_y_data(data_path, num_steps, ptb_data_path, embedding=False, embedding_path=None):
+def raw_x_y_data(data_path, num_steps, ptb_data_path, embedding=False, embedding_path=None, ptb=True):
     train = "train.txt"
     valid = "validation.txt"
     train_valid = "train_val_combined.txt"
@@ -170,14 +173,14 @@ def raw_x_y_data(data_path, num_steps, ptb_data_path, embedding=False, embedding
 
     if embedding == True:
         word_embedding_full = import_embeddings(embedding_path)
-        word_to_id = _build_vocab_embedding(comb_path, ptb_path, num_steps-1, 0, word_embedding_full)
+        word_to_id = _build_vocab_embedding(comb_path, ptb_path, num_steps-1, 0, word_embedding_full, ptb=False)
         id_to_word = {v: k for k, v in word_to_id.items()}
         ordered_vocab = [id_to_word[i] for i in range(len(id_to_word))]
         embedding_len = len(word_embedding_full['the'])
         word_embedding = [word_embedding_full.get(key.lower(), np.random.randn(embedding_len))
                                    for key in ordered_vocab]
     else:
-        word_to_id = _build_vocab(comb_path, ptb_path, num_steps-1, 0)
+        word_to_id = _build_vocab(comb_path, ptb_path, num_steps-1, 0, ptb=False)
         word_embedding = None
 
     # use the full training set for building the target tags
@@ -187,10 +190,6 @@ def raw_x_y_data(data_path, num_steps, ptb_data_path, embedding=False, embedding
     word_data_t = _file_to_word_ids(train_path, word_to_id, num_steps-1)
     pos_data_t = _file_to_tag_classifications(train_path, pos_to_id, num_steps-1, 1,)
     chunk_data_t = _file_to_tag_classifications(train_path, chunk_to_id, num_steps-1, 2)
-
-    ptb_word_data = _file_to_word_ids(ptb_path, word_to_id, num_steps-1)
-    ptb_pos_data = _file_to_tag_classifications(ptb_path, pos_to_id, num_steps-1, 1)
-    ptb_chunk_data = _file_to_tag_classifications(ptb_path, chunk_to_id, num_steps-1, 2)
 
     word_data_v = _file_to_word_ids(valid_path, word_to_id, num_steps-1)
     pos_data_v = _file_to_tag_classifications(valid_path, pos_to_id, num_steps-1, 1)
@@ -203,6 +202,15 @@ def raw_x_y_data(data_path, num_steps, ptb_data_path, embedding=False, embedding
     word_data_test = _file_to_word_ids(test_path, word_to_id, num_steps-1)
     pos_data_test = _file_to_tag_classifications(test_path, pos_to_id, num_steps-1, 1)
     chunk_data_test = _file_to_tag_classifications(test_path, chunk_to_id, num_steps-1, 2)
+
+    if ptb==True:
+        ptb_word_data = _file_to_word_ids(ptb_path, word_to_id, num_steps-1)
+        ptb_pos_data = _file_to_tag_classifications(ptb_path, pos_to_id, num_steps-1, 1)
+        ptb_chunk_data = _file_to_tag_classifications(ptb_path, chunk_to_id, num_steps-1, 2)
+    else:
+        ptb_word_data = word_data_v + word_data_test
+        ptb_pos_data = pos_data_v + pos_data_test
+        ptb_chunk_data = chunk_data_v + chunk_data_test
 
     return word_data_t, pos_data_t, chunk_data_t, word_data_v, \
         pos_data_v, chunk_data_v, word_to_id, pos_to_id, chunk_to_id, \
